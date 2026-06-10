@@ -1,0 +1,90 @@
+<div class="misc-master-container">
+  <div class="form-wrapper">
+    <h2>Misc Master</h2>
+    
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <!-- Type Dropdown -->
+      <div class="form-group">
+        <label for="type">Type <span class="required">*</span></label>
+        <select 
+          id="type" 
+          formControlName="type" 
+          class="form-control"
+          (change)="onTypeChange()"
+          [class.is-invalid]="form.get('type')?.invalid && form.get('type')?.touched">
+          <option value="">-- Select Type --</option>
+          <option *ngFor="let type of dropdownTypes" [value]="type">{{ type }}</option>
+        </select>
+        <div class="error-message" *ngIf="form.get('type')?.invalid && form.get('type')?.touched">
+          {{ getErrorMessage('type') }}
+        </div>
+      </div>
+
+      <!-- Name TextBox -->
+      <div class="form-group">
+        <label for="name">Name <span class="required">*</span></label>
+        <input 
+          id="name" 
+          type="text" 
+          formControlName="name" 
+          class="form-control"
+          placeholder="Enter name"
+          [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched">
+        <div class="error-message" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
+          {{ getErrorMessage('name') }}
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="button-group">
+        <button type="submit" class="btn btn-primary" [disabled]="loading">
+          <span *ngIf="loading" class="spinner"></span>
+          {{ loading ? 'Saving...' : 'Submit' }}
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="reset()" [disabled]="loading">Reset</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- List Section -->
+  <div class="list-wrapper" *ngIf="selectedType">
+    <h3>{{ selectedType }} - List</h3>
+    
+    <div class="loading-spinner" *ngIf="loading">
+      <span>Loading...</span>
+    </div>
+
+    <div class="no-data" *ngIf="!loading && miscItems.length === 0">
+      <p>No records found for {{ selectedType }}</p>
+    </div>
+
+    <div class="table-responsive" *ngIf="!loading && miscItems.length > 0">
+      <table class="misc-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Created Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of miscItems; let i = index">
+            <td>{{ item.id }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.createdAt | date: 'medium' }}</td>
+            <td>
+              <button 
+                class="btn-delete" 
+                (click)="deleteMiscMaster(item.id, item.name)"
+                [disabled]="loading"
+                title="Delete">
+                Delete
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

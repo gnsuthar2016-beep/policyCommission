@@ -1,0 +1,6 @@
+.auth-page{min-height:calc(100vh - 0px)}
+.auth-card{padding:24px}
+.brand .logo{font-size:18px}
+.primary{padding:12px}
+.links{margin-top:12px}
+.error{margin-top:6px;color:#d32f2f;font-size:12px;padding:8px;background-color:#ffebee;border-radius:4px;margin-bottom:12px}

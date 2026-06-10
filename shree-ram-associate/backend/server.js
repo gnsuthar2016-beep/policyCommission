@@ -1,0 +1,133 @@
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const dotenv = require('dotenv');
+const bcrypt = require('bcryptjs');
+const sequelize = require('./config/database');
+const User = require('./models/User');
+const Policy = require('./models/Policy');
+const Document = require('./models/Document');
+const MiscMaster = require('./models/MiscMaster');
+const Customer = require('./models/Customer');
+const Reference = require('./models/Reference');
+const { fixCustomerNameColumn } = require('./migrations/fix-customer-name');
+const policyRoutes = require('./routes/policyRoutes');
+const miscMasterRoutes = require('./routes/miscMasterRoutes');
+const customerRoutes = require('./routes/customerRoutes');
+const referenceRoutes = require('./routes/referenceRoutes');
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Routes
+app.use(policyRoutes);
+app.use(miscMasterRoutes);
+app.use(customerRoutes);
+app.use(referenceRoutes);
+
+// Database connection
+sequelize.authenticate()
+  .then(async () => {
+    console.log('✓ Database connection successful');
+    
+    // Run migration to fix customerName column
+    console.log('Running database migrations...');
+    await fixCustomerNameColumn();
+    
+    // Sync all models
+    return sequelize.sync({ alter: true });
+  })
+  .then(() => {
+    console.log('✓ Database tables synced successfully');
+  })
+  .catch(err => {
+    console.error('✗ Database error:', err);
+    process.exit(1);
+  });
+
+// Login API endpoint
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Compare password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Success response
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        id: user.id,
+        email: user.email,
+        name: user.name
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during login'
+    });
+  }
+});
+
+// Logout API endpoint
+app.post('/api/logout', (req, res) => {
+  try {
+    // In this simple implementation, logout is handled on the frontend
+    // by clearing the session. You can add server-side session tracking here if needed
+    res.status(200).json({
+      success: true,
+      message: 'Logout successful'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during logout'
+    });
+  }
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ message: 'Server is running' });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});

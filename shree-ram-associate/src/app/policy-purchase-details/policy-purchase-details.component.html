@@ -1,0 +1,649 @@
+<div class="policy-container">
+  <!-- Loading State -->
+  <div class="loading-overlay" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading policy details...</p>
+  </div>
+
+  <div class="policy-header">
+    <h1>{{ pageTitle }}</h1>
+    <p *ngIf="!isEditMode">Please fill in all the required information below</p>
+    <p *ngIf="isEditMode">Update policy information and documents</p>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="policy-form" *ngIf="!loading">
+    <!-- Section: Policy Purchase Details -->
+    <div class="form-section">
+      <h2 class="section-title">Policy Purchase Details</h2>
+
+      <div class="form-grid">
+        <!-- Customer Name -->
+        <div class="form-group">
+          <label for="customerName">Customer Name <span class="required">*</span></label>
+          <div class="customer-input-group">
+            <select id="customerName" formControlName="customerName" class="form-control" (change)="onCustomerChange($event)">
+              <option value="">-- Select Customer --</option>
+              <option *ngFor="let customer of customerNames" [value]="customer">{{ customer }}</option>
+            </select>
+            <button type="button" class="btn-add-customer" (click)="goToAddCustomer()" title="Add New Customer">
+              + Add New
+            </button>
+          </div>
+          <div class="error-message" *ngIf="form.get('customerName')?.touched && form.get('customerName')?.invalid">
+            {{ getErrorMessage('customerName') }}
+          </div>
+        </div>
+
+        <!-- Policy Type -->
+        <div class="form-group">
+          <label for="policyType">Policy Type <span class="required">*</span></label>
+          <select id="policyType" formControlName="policyType" class="form-control">
+            <option value="">-- Select Policy Type --</option>
+            <option *ngFor="let type of policyTypes" [value]="type">{{ type }}</option>
+          </select>
+          <div class="error-message" *ngIf="form.get('policyType')?.touched && form.get('policyType')?.invalid">
+            {{ getErrorMessage('policyType') }}
+          </div>
+        </div>
+
+        <!-- Renewal -->
+        <div class="form-group">
+          <label for="renewal">Renewal <span class="required">*</span></label>
+          <select id="renewal" formControlName="renewal" class="form-control">
+            <option value="">-- Select Renewal --</option>
+            <option *ngFor="let option of renewalOptions" [value]="option">{{ option }}</option>
+          </select>
+          <div class="error-message" *ngIf="form.get('renewal')?.touched && form.get('renewal')?.invalid">
+            {{ getErrorMessage('renewal') }}
+          </div>
+        </div>
+
+        <!-- Insured Name -->
+        <div class="form-group">
+          <label for="insuredName">Insured Name <span class="required">*</span></label>
+          <input type="text" id="insuredName" formControlName="insuredName" class="form-control" 
+                 placeholder="Enter insured name">
+          <div class="error-message" *ngIf="form.get('insuredName')?.touched && form.get('insuredName')?.invalid">
+            {{ getErrorMessage('insuredName') }}
+          </div>
+        </div>
+
+        <!-- Policy Number -->
+        <div class="form-group">
+          <label for="policyNumber">Policy Number <span class="required">*</span></label>
+          <input type="text" id="policyNumber" formControlName="policyNumber" class="form-control" 
+                 placeholder="Enter policy number">
+          <div class="error-message" *ngIf="form.get('policyNumber')?.touched && form.get('policyNumber')?.invalid">
+            {{ getErrorMessage('policyNumber') }}
+          </div>
+        </div>
+
+        <!-- Reference Name -->
+        <div class="form-group">
+          <label for="referenceName">Reference Name <span class="required">*</span></label>
+          <div class="reference-input-group">
+            <select id="referenceName" formControlName="referenceName" class="form-control">
+              <option value="">-- Select Reference Name --</option>
+              <option *ngFor="let ref of referenceNames" [value]="ref">{{ ref }}</option>
+            </select>
+            <button type="button" class="btn-add-reference" (click)="goToAddReference()" title="Add New Reference">
+              + Add New
+            </button>
+          </div>
+          <div class="error-message" *ngIf="form.get('referenceName')?.touched && form.get('referenceName')?.invalid">
+            {{ getErrorMessage('referenceName') }}
+          </div>
+        </div>
+
+        <!-- Company Name -->
+        <div class="form-group">
+          <label for="companyName">Company Name <span class="required">*</span></label>
+          <select id="companyName" formControlName="companyName" class="form-control">
+            <option value="">-- Select Company Name --</option>
+            <option *ngFor="let company of companyNames" [value]="company">{{ company }}</option>
+          </select>
+          <div class="error-message" *ngIf="form.get('companyName')?.touched && form.get('companyName')?.invalid">
+            {{ getErrorMessage('companyName') }}
+          </div>
+        </div>
+
+        <!-- Insurance Type -->
+        <div class="form-group">
+          <label for="insuranceType">Insurance Type <span class="required">*</span></label>
+          <select id="insuranceType" formControlName="insuranceType" class="form-control">
+            <option value="">-- Select Insurance Type --</option>
+            <option *ngFor="let type of insuranceTypes" [value]="type">{{ type }}</option>
+          </select>
+          <div class="error-message" *ngIf="form.get('insuranceType')?.touched && form.get('insuranceType')?.invalid">
+            {{ getErrorMessage('insuranceType') }}
+          </div>
+        </div>
+
+        <!-- Product Name -->
+        <div class="form-group">
+          <label for="productName">Product Name <span class="required">*</span></label>
+          <select id="productName" formControlName="productName" class="form-control">
+            <option value="">-- Select Product Name --</option>
+            <option *ngFor="let product of productNames" [value]="product">{{ product }}</option>
+          </select>
+          <div class="error-message" *ngIf="form.get('productName')?.touched && form.get('productName')?.invalid">
+            {{ getErrorMessage('productName') }}
+          </div>
+        </div>
+
+        <!-- Period From -->
+        <div class="form-group">
+          <label for="periodFrom">Period From <span class="required">*</span></label>
+          <input type="date" id="periodFrom" formControlName="periodFrom" class="form-control">
+          <div class="error-message" *ngIf="form.get('periodFrom')?.touched && form.get('periodFrom')?.invalid">
+            {{ getErrorMessage('periodFrom') }}
+          </div>
+        </div>
+
+        <!-- Period To -->
+        <div class="form-group">
+          <label for="periodTo">Period To <span class="required">*</span></label>
+          <input type="date" id="periodTo" formControlName="periodTo" class="form-control">
+          <div class="error-message" *ngIf="form.get('periodTo')?.touched && form.get('periodTo')?.invalid">
+            {{ getErrorMessage('periodTo') }}
+          </div>
+        </div>
+
+        <!-- Policy Date -->
+        <div class="form-group">
+          <label for="policyDate">Policy Date</label>
+          <input type="date" id="policyDate" formControlName="policyDate" class="form-control">
+          <div class="error-message" *ngIf="form.get('policyDate')?.touched && form.get('policyDate')?.invalid">
+            {{ getErrorMessage('policyDate') }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Premium Details -->
+    <div class="form-section">
+      <h2 class="section-title">Premium Details</h2>
+
+      <div class="form-grid">
+        <!-- Basic / OD Premium -->
+        <div class="form-group">
+          <label for="basicODPremium">Basic / OD Premium <span class="required">*</span></label>
+          <input type="text" id="basicODPremium" formControlName="basicODPremium" class="form-control" 
+                 placeholder="Enter amount" inputmode="decimal">
+          <div class="error-message" *ngIf="form.get('basicODPremium')?.touched && form.get('basicODPremium')?.invalid">
+            {{ getErrorMessage('basicODPremium') }}
+          </div>
+        </div>
+
+        <!-- TP Premium -->
+        <div class="form-group">
+          <label for="tpPremium">TP Premium <span class="required">*</span></label>
+          <input type="text" id="tpPremium" formControlName="tpPremium" class="form-control" 
+                 placeholder="Enter amount" inputmode="decimal">
+          <div class="error-message" *ngIf="form.get('tpPremium')?.touched && form.get('tpPremium')?.invalid">
+            {{ getErrorMessage('tpPremium') }}
+          </div>
+        </div>
+
+        <!-- NCB with % symbol -->
+        <div class="form-group">
+          <label for="ncb">NCB</label>
+          <div class="input-with-symbol">
+            <input type="text" id="ncb" formControlName="ncb" class="form-control" 
+                   placeholder="Enter NCB" inputmode="decimal">
+            <span class="symbol">%</span>
+          </div>
+          <div class="error-message" *ngIf="form.get('ncb')?.touched && form.get('ncb')?.invalid">
+            {{ getErrorMessage('ncb') }}
+          </div>
+        </div>
+
+        <!-- NCB Amount (Calculated) -->
+        <div class="form-group">
+          <label for="ncbAmount">NCB Amount (Auto-calculated)</label>
+          <input type="text" id="ncbAmount" [value]="getNcbAmount() | number:'1.2-2'" class="form-control" 
+                 readonly disabled placeholder="Calculated automatically" style="background-color: #f5f5f5; cursor: not-allowed;">
+          <small style="color: #666;">Calculated as: (OD Premium + TP Premium) × NCB% ÷ 100</small>
+        </div>
+
+        <!-- Net Premium -->
+        <div class="form-group">
+          <label for="netPremium">Net Premium <span class="required">*</span></label>
+          <input type="text" id="netPremium" formControlName="netPremium" class="form-control" 
+                 placeholder="Enter amount" inputmode="decimal" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
+          <small style="color: #666;">Auto-calculated as: (OD Premium + TP Premium) - NCB Amount</small>
+          <div class="error-message" *ngIf="form.get('netPremium')?.touched && form.get('netPremium')?.invalid">
+            {{ getErrorMessage('netPremium') }}
+          </div>
+        </div>
+
+        <!-- GST % with % symbol -->
+        <div class="form-group">
+          <label for="gstPercent">GST %</label>
+          <div class="input-with-symbol">
+            <input type="text" id="gstPercent" formControlName="gstPercent" class="form-control" 
+                   placeholder="Enter GST %" inputmode="decimal">
+            <span class="symbol">%</span>
+          </div>
+          <div class="error-message" *ngIf="form.get('gstPercent')?.touched && form.get('gstPercent')?.invalid">
+            {{ getErrorMessage('gstPercent') }}
+          </div>
+        </div>
+
+        <!-- GST Amount -->
+        <div class="form-group">
+          <label for="gstAmount">GST Amount (Auto-calculated)</label>
+          <input type="text" id="gstAmount" [value]="getGstAmount() | number:'1.2-2'" class="form-control" 
+                 readonly disabled placeholder="Calculated automatically" style="background-color: #f5f5f5; cursor: not-allowed;">
+          <small style="color: #666;">Calculated as: Net Premium × GST% ÷ 100</small>
+        </div>
+
+        <!-- Final Premium -->
+        <div class="form-group">
+          <label for="finalPremium">Final Premium <span class="required">*</span></label>
+          <input type="text" id="finalPremium" [value]="getFinalPremium() | number:'1.2-2'" class="form-control" 
+                 placeholder="Calculated automatically" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
+          <small style="color: #666;">Auto-calculated as: Net Premium + GST Amount</small>
+          <div class="error-message" *ngIf="form.get('finalPremium')?.touched && form.get('finalPremium')?.invalid">
+            {{ getErrorMessage('finalPremium') }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Broker Details -->
+    <div class="form-section">
+      <h2 class="section-title">Broker Details</h2>
+
+      <div class="form-grid">
+        <!-- Ref. Brokerage On (Auto-populated from Net Premium) -->
+        <div class="form-group">
+          <label for="refBrokerageOn">Ref. Brokerage On <span class="required">*</span></label>
+          <input type="text" id="refBrokerageOn" [value]="form.get('netPremium')?.value || 0 | number:'1.2-2'" class="form-control" 
+                 readonly disabled placeholder="Auto-populated from Net Premium" style="background-color: #f5f5f5; cursor: not-allowed;">
+          <small style="color: #666;">Auto-populated from Net Premium value</small>
+        </div>
+
+        <!-- Ref Brokerage % with % symbol -->
+        <div class="form-group">
+          <label for="refBrokeragePercent">Ref Brokerage %</label>
+          <div class="input-with-symbol">
+            <input type="text" id="refBrokeragePercent" formControlName="refBrokeragePercent" class="form-control" 
+                   placeholder="Enter percentage" inputmode="decimal">
+            <span class="symbol">%</span>
+          </div>
+          <div class="error-message" *ngIf="form.get('refBrokeragePercent')?.touched && form.get('refBrokeragePercent')?.invalid">
+            {{ getErrorMessage('refBrokeragePercent') }}
+          </div>
+        </div>
+
+        <!-- Ref. Brokerage Amount (Auto-calculated) -->
+        <div class="form-group">
+          <label for="refBrokerageAmount">Ref. Brokerage Amount (Auto-calculated)</label>
+          <input type="text" id="refBrokerageAmount" [value]="getRefBrokerageAmount() | number:'1.2-2'" class="form-control" 
+                 readonly disabled placeholder="Calculated automatically" style="background-color: #f5f5f5; cursor: not-allowed;">
+          <small style="color: #666;">Calculated as: Ref. Brokerage On × Ref Brokerage% ÷ 100</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Motor/Vehicle Details -->
+    <div class="form-section">
+      <h2 class="section-title">Motor/Vehicle Details</h2>
+
+      <div class="form-grid">
+        <!-- Total IDV / SA -->
+        <div class="form-group">
+          <label for="totalIDV">Total IDV / SA <span class="required">*</span></label>
+          <input type="text" id="totalIDV" formControlName="totalIDV" class="form-control" 
+                 placeholder="Enter amount" inputmode="decimal">
+          <div class="error-message" *ngIf="form.get('totalIDV')?.touched && form.get('totalIDV')?.invalid">
+            {{ getErrorMessage('totalIDV') }}
+          </div>
+        </div>
+
+        <!-- Make -->
+        <div class="form-group">
+          <label for="make">Make <span class="required">*</span></label>
+          <select id="make" formControlName="make" class="form-control">
+            <option value="" disabled selected>Select Vehicle Make</option>
+            <option *ngFor="let m of vehicleMakes" [value]="m">{{ m }}</option>
+          </select>
+          <div class="error-message" *ngIf="form.get('make')?.touched && form.get('make')?.invalid">
+            {{ getErrorMessage('make') }}
+          </div>
+        </div>
+
+        <!-- Model -->
+        <div class="form-group">
+          <label for="model">Model <span class="required">*</span></label>
+          <select id="model" formControlName="model" class="form-control">
+            <option value="" disabled selected>Select Vehicle Model</option>
+            <option *ngFor="let mod of vehicleModels" [value]="mod">{{ mod }}</option>
+          </select>
+          <div class="error-message" *ngIf="form.get('model')?.touched && form.get('model')?.invalid">
+            {{ getErrorMessage('model') }}
+          </div>
+        </div>
+
+        <!-- Registration Number -->
+        <div class="form-group">
+          <label for="registrationNumber">Registration Number <span class="required">*</span></label>
+          <input type="text" id="registrationNumber" formControlName="registrationNumber" class="form-control" 
+                 placeholder="Enter registration number">
+          <div class="error-message" *ngIf="form.get('registrationNumber')?.touched && form.get('registrationNumber')?.invalid">
+            {{ getErrorMessage('registrationNumber') }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Document Upload -->
+    <div class="form-section">
+      <h2 class="section-title">Document Upload</h2>
+
+      <div class="document-upload-group">
+        <div class="upload-form-grid">
+          <!-- Document Type -->
+          <div class="form-group">
+            <label for="documentType">Document Type <span class="required">*</span></label>
+            <select id="documentType" [formControl]="documentTypeControl" class="form-control">
+              <option value="" disabled selected>Select Document Type</option>
+              <option *ngFor="let docType of documentTypes" [value]="docType">{{ docType }}</option>
+            </select>
+            <div class="error-message" *ngIf="documentForm.get('documentType')?.touched && documentForm.get('documentType')?.invalid">
+              Document Type is required
+            </div>
+          </div>
+
+          <!-- File Upload -->
+          <div class="form-group">
+            <label for="fileUpload">Select File</label>
+            <input type="file" id="fileUpload" #fileInput class="form-control file-input">
+          </div>
+
+          <!-- Upload Button -->
+          <div class="form-group upload-button-group">
+            <button type="button" class="btn btn-success" (click)="addDocument(fileInput)">
+              Upload Document
+            </button>
+          </div>
+        </div>
+
+        <!-- Documents Table -->
+        <div class="documents-table-container" *ngIf="documents.length > 0">
+          <h3 class="table-title">Uploaded Documents</h3>
+          <table class="documents-table">
+            <thead>
+              <tr>
+                <th>S.No</th>
+                <th>Document Type</th>
+                <th>File Name</th>
+                <th>File Size</th>
+                <th>Upload Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let doc of documents; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>{{ doc.documentType }}</td>
+                <td>{{ doc.fileName }}</td>
+                <td>{{ doc.fileSize }}</td>
+                <td>{{ doc.uploadDate }}</td>
+                <td>
+                  <button type="button" class="btn-icon btn-download" (click)="viewDocument(doc)" title="Download Document">
+                    <i class="icon-download">⬇️</i>
+                  </button>
+                  <button type="button" class="btn-icon btn-delete" (click)="removeDocument(doc.id)" title="Delete">
+                    <i class="icon-delete">🗑️</i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="documents.length === 0">
+          <p>No documents uploaded yet. Upload a document to get started.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">
+        {{ isEditMode ? 'Update Policy' : 'Save Policy' }}
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="reset()">Reset</button>
+      <button type="button" class="btn btn-cancel" (click)="cancel()">Cancel</button>
+    </div>
+  </form>
+
+  <!-- Add Customer Modal -->
+  <div class="modal-overlay" *ngIf="showAddCustomerModal" (click)="closeAddCustomerModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Add New Customer</h3>
+        <button type="button" class="modal-close" (click)="closeAddCustomerModal()">×</button>
+      </div>
+
+      <form [formGroup]="addCustomerForm" (ngSubmit)="saveNewCustomer()" class="modal-form">
+        <div class="modal-body">
+          <!-- Name -->
+          <div class="form-group">
+            <label for="modalName">Name <span class="required">*</span></label>
+            <input 
+              id="modalName" 
+              type="text" 
+              formControlName="name" 
+              class="form-control"
+              placeholder="Enter customer name"
+              [class.is-invalid]="addCustomerForm.get('name')?.invalid && addCustomerForm.get('name')?.touched">
+            <div class="error-message" *ngIf="addCustomerForm.get('name')?.invalid && addCustomerForm.get('name')?.touched">
+              {{ getCustomerErrorMessage('name') }}
+            </div>
+          </div>
+
+          <!-- Mobile Number -->
+          <div class="form-group">
+            <label for="modalMobile">Mobile Number <span class="required">*</span></label>
+            <input 
+              id="modalMobile" 
+              type="tel" 
+              formControlName="mobileNumber" 
+              class="form-control"
+              placeholder="Enter 10-digit mobile number"
+              [class.is-invalid]="addCustomerForm.get('mobileNumber')?.invalid && addCustomerForm.get('mobileNumber')?.touched">
+            <div class="error-message" *ngIf="addCustomerForm.get('mobileNumber')?.invalid && addCustomerForm.get('mobileNumber')?.touched">
+              {{ getCustomerErrorMessage('mobileNumber') }}
+            </div>
+          </div>
+
+          <!-- Email ID -->
+          <div class="form-group">
+            <label for="modalEmail">Email ID <span class="required">*</span></label>
+            <input 
+              id="modalEmail" 
+              type="email" 
+              formControlName="emailId" 
+              class="form-control"
+              placeholder="Enter email address"
+              [class.is-invalid]="addCustomerForm.get('emailId')?.invalid && addCustomerForm.get('emailId')?.touched">
+            <div class="error-message" *ngIf="addCustomerForm.get('emailId')?.invalid && addCustomerForm.get('emailId')?.touched">
+              {{ getCustomerErrorMessage('emailId') }}
+            </div>
+          </div>
+
+          <!-- Alternative Mobile Number -->
+          <div class="form-group">
+            <label for="modalAltMobile">Alternative Mobile Number</label>
+            <input 
+              id="modalAltMobile" 
+              type="tel" 
+              formControlName="alternativeMobileNumber" 
+              class="form-control"
+              placeholder="Enter 10-digit alternative mobile number"
+              [class.is-invalid]="addCustomerForm.get('alternativeMobileNumber')?.invalid && addCustomerForm.get('alternativeMobileNumber')?.touched">
+            <div class="error-message" *ngIf="addCustomerForm.get('alternativeMobileNumber')?.invalid && addCustomerForm.get('alternativeMobileNumber')?.touched">
+              {{ getCustomerErrorMessage('alternativeMobileNumber') }}
+            </div>
+          </div>
+
+          <!-- Date of Birth -->
+          <div class="form-group">
+            <label for="modalDOB">Date of Birth</label>
+            <input 
+              id="modalDOB" 
+              type="date" 
+              formControlName="dateOfBirth" 
+              class="form-control"
+              [class.is-invalid]="addCustomerForm.get('dateOfBirth')?.invalid && addCustomerForm.get('dateOfBirth')?.touched">
+            <div class="error-message" *ngIf="addCustomerForm.get('dateOfBirth')?.invalid && addCustomerForm.get('dateOfBirth')?.touched">
+              {{ getCustomerErrorMessage('dateOfBirth') }}
+            </div>
+          </div>
+
+          <!-- Remark -->
+          <div class="form-group">
+            <label for="modalRemark">Remark</label>
+            <textarea 
+              id="modalRemark" 
+              formControlName="remark" 
+              class="form-control"
+              placeholder="Enter any remarks or notes"
+              rows="2"
+              [class.is-invalid]="addCustomerForm.get('remark')?.invalid && addCustomerForm.get('remark')?.touched"></textarea>
+            <div class="error-message" *ngIf="addCustomerForm.get('remark')?.invalid && addCustomerForm.get('remark')?.touched">
+              {{ getCustomerErrorMessage('remark') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary" [disabled]="addingCustomer">
+            <span *ngIf="addingCustomer" class="spinner-small"></span>
+            {{ addingCustomer ? 'Saving...' : 'Save Customer' }}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="closeAddCustomerModal()" [disabled]="addingCustomer">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Reference Modal -->
+  <div class="modal-overlay" *ngIf="showAddReferenceModal" (click)="closeAddReferenceModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Add New Reference</h3>
+        <button type="button" class="modal-close" (click)="closeAddReferenceModal()">×</button>
+      </div>
+
+      <form [formGroup]="addReferenceForm" (ngSubmit)="saveNewReference()" class="modal-form">
+        <div class="modal-body">
+          <!-- Reference Name -->
+          <div class="form-group">
+            <label for="modalRefName">Reference Name <span class="required">*</span></label>
+            <input 
+              id="modalRefName" 
+              type="text" 
+              formControlName="name" 
+              class="form-control"
+              placeholder="Enter reference name"
+              [class.is-invalid]="addReferenceForm.get('name')?.invalid && addReferenceForm.get('name')?.touched">
+            <div class="error-message" *ngIf="addReferenceForm.get('name')?.invalid && addReferenceForm.get('name')?.touched">
+              {{ getReferenceErrorMessage('name') }}
+            </div>
+          </div>
+
+          <!-- Mobile Number -->
+          <div class="form-group">
+            <label for="modalRefMobile">Mobile Number <span class="required">*</span></label>
+            <input 
+              id="modalRefMobile" 
+              type="tel" 
+              formControlName="mobileNumber" 
+              class="form-control"
+              placeholder="Enter 10-digit mobile number"
+              [class.is-invalid]="addReferenceForm.get('mobileNumber')?.invalid && addReferenceForm.get('mobileNumber')?.touched">
+            <div class="error-message" *ngIf="addReferenceForm.get('mobileNumber')?.invalid && addReferenceForm.get('mobileNumber')?.touched">
+              {{ getReferenceErrorMessage('mobileNumber') }}
+            </div>
+          </div>
+
+          <!-- Email ID -->
+          <div class="form-group">
+            <label for="modalRefEmail">Email ID <span class="required">*</span></label>
+            <input 
+              id="modalRefEmail" 
+              type="email" 
+              formControlName="emailId" 
+              class="form-control"
+              placeholder="Enter email address"
+              [class.is-invalid]="addReferenceForm.get('emailId')?.invalid && addReferenceForm.get('emailId')?.touched">
+            <div class="error-message" *ngIf="addReferenceForm.get('emailId')?.invalid && addReferenceForm.get('emailId')?.touched">
+              {{ getReferenceErrorMessage('emailId') }}
+            </div>
+          </div>
+
+          <!-- Alternative Mobile Number -->
+          <div class="form-group">
+            <label for="modalRefAltMobile">Alternative Mobile Number</label>
+            <input 
+              id="modalRefAltMobile" 
+              type="tel" 
+              formControlName="alternativeMobileNumber" 
+              class="form-control"
+              placeholder="Enter 10-digit alternative mobile number"
+              [class.is-invalid]="addReferenceForm.get('alternativeMobileNumber')?.invalid && addReferenceForm.get('alternativeMobileNumber')?.touched">
+            <div class="error-message" *ngIf="addReferenceForm.get('alternativeMobileNumber')?.invalid && addReferenceForm.get('alternativeMobileNumber')?.touched">
+              {{ getReferenceErrorMessage('alternativeMobileNumber') }}
+            </div>
+          </div>
+
+          <!-- Date of Birth -->
+          <div class="form-group">
+            <label for="modalRefDOB">Date of Birth</label>
+            <input 
+              id="modalRefDOB" 
+              type="date" 
+              formControlName="dateOfBirth" 
+              class="form-control"
+              [class.is-invalid]="addReferenceForm.get('dateOfBirth')?.invalid && addReferenceForm.get('dateOfBirth')?.touched">
+            <div class="error-message" *ngIf="addReferenceForm.get('dateOfBirth')?.invalid && addReferenceForm.get('dateOfBirth')?.touched">
+              {{ getReferenceErrorMessage('dateOfBirth') }}
+            </div>
+          </div>
+
+          <!-- Remark -->
+          <div class="form-group">
+            <label for="modalRefRemark">Remark</label>
+            <textarea 
+              id="modalRefRemark" 
+              formControlName="remark" 
+              class="form-control"
+              placeholder="Enter any remarks or notes"
+              rows="2"
+              [class.is-invalid]="addReferenceForm.get('remark')?.invalid && addReferenceForm.get('remark')?.touched"></textarea>
+            <div class="error-message" *ngIf="addReferenceForm.get('remark')?.invalid && addReferenceForm.get('remark')?.touched">
+              {{ getReferenceErrorMessage('remark') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary" [disabled]="addingReference">
+            <span *ngIf="addingReference" class="spinner-small"></span>
+            {{ addingReference ? 'Saving...' : 'Save Reference' }}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="closeAddReferenceModal()" [disabled]="addingReference">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

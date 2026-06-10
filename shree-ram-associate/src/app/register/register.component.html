@@ -1,0 +1,31 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="brand">
+      <div class="logo">SR</div>
+      <div>
+        <h1>Create account</h1>
+        <p>Join Shree Ram Associate</p>
+      </div>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <label>
+        Full name
+        <input formControlName="name" />
+      </label>
+
+      <label>
+        Email
+        <input formControlName="email" />
+      </label>
+
+      <label>
+        Password
+        <input type="password" formControlName="password" />
+      </label>
+
+      <button class="primary" type="submit">Create account</button>
+    </form>
+    <div class="links"><a (click)="router.navigate([''])">Back to login</a></div>
+  </div>
+</div>

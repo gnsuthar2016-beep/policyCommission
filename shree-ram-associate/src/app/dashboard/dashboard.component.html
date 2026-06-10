@@ -1,0 +1,145 @@
+<div class="dashboard-container">
+  <!-- Header Section -->
+  <div class="dashboard-header">
+    <h1>Commission Dashboard</h1>
+    <p>Track daily and monthly broker commissions and collections</p>
+  </div>
+
+  <!-- Filter Section -->
+  <div class="filter-section">
+    <form [formGroup]="filterForm" class="filter-form">
+      <div class="filter-group">
+        <!-- Reference Name Filter -->
+        <div class="form-group">
+          <label for="referenceName">Reference Name (Broker)</label>
+          <select id="referenceName" formControlName="referenceName" class="form-control">
+            <option value="">All Brokers</option>
+            <option *ngFor="let ref of referenceNames" [value]="ref">{{ ref }}</option>
+          </select>
+        </div>
+
+        <!-- Year Filter -->
+        <div class="form-group">
+          <label for="year">Year</label>
+          <select id="year" formControlName="year" class="form-control">
+            <option *ngFor="let y of years" [value]="y">{{ y }}</option>
+          </select>
+        </div>
+
+        <!-- Month Filter -->
+        <div class="form-group">
+          <label for="month">Month</label>
+          <select id="month" formControlName="month" class="form-control">
+            <option *ngFor="let m of months" [value]="m.value">{{ m.label }}</option>
+          </select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="filter-actions">
+          <button type="button" class="btn btn-primary" (click)="onFilterChange()">
+            Apply Filters
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="resetFilters()">
+            Reset
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading chart data...</p>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="charts-section" *ngIf="!loading">
+    <!-- Daily Commission Chart -->
+    <div class="chart-container">
+      <h2 class="chart-title">Daily Commission & Collection Chart</h2>
+      <div class="chart-wrapper">
+        <canvas #dailyChart></canvas>
+      </div>
+      <div *ngIf="dailyChartData.length === 0" class="no-data">
+        <p>No data available for selected filters</p>
+      </div>
+    </div>
+
+    <!-- Monthly Commission Chart -->
+    <div class="chart-container">
+      <h2 class="chart-title">Monthly Commission Summary</h2>
+      <div class="chart-wrapper">
+        <canvas #monthlyChart></canvas>
+      </div>
+      <div *ngIf="monthlyChartData.length === 0" class="no-data">
+        <p>No monthly data available</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="stats-section" *ngIf="!loading && dailyChartData.length > 0">
+    <div class="stat-card">
+      <h3>Total Commission</h3>
+      <p class="stat-value">₹{{ (dailyChartData | reduce: 'commission') | number:'1.2-2' }}</p>
+    </div>
+    <div class="stat-card">
+      <h3>Total Collection</h3>
+      <p class="stat-value">₹{{ (dailyChartData | reduce: 'collection') | number:'1.2-2' }}</p>
+    </div>
+    <div class="stat-card">
+      <h3>Days Tracked</h3>
+      <p class="stat-value">{{ dailyChartData.length }}</p>
+    </div>
+  </div>
+
+  <!-- Renewal List Section -->
+  <div class="renewal-section">
+    <div class="renewal-header">
+      <h2 class="renewal-title">🔄 Policy Renewals (Next 3 Days)</h2>
+      <span class="renewal-count" *ngIf="renewalPolicies.length > 0">
+        {{ renewalPolicies.length }} policies
+      </span>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="renewalLoading" class="renewal-loading">
+      <div class="spinner"></div>
+      <p>Loading renewal data...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!renewalLoading && renewalPolicies.length === 0" class="renewal-empty">
+      <p>No policies expiring in the next 3 days</p>
+    </div>
+
+    <!-- Renewal List -->
+    <div *ngIf="!renewalLoading && renewalPolicies.length > 0" class="renewal-list">
+      <table class="renewal-table">
+        <thead>
+          <tr>
+            <th>Policy Number</th>
+            <th>Customer Name</th>
+            <th>Insured Name</th>
+            <th>Company</th>
+            <th>Expiry Date</th>
+            <th>Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let policy of renewalPolicies" class="renewal-row">
+            <td class="policy-number">{{ policy.policyNumber }}</td>
+            <td class="customer-name">{{ policy.customerName || 'N/A' }}</td>
+            <td class="insured-name">{{ policy.insuredName }}</td>
+            <td class="company-name">{{ policy.companyName }}</td>
+            <td class="expiry-date">
+              <span class="expiry-badge">{{ policy.periodToFormatted }}</span>
+            </td>
+            <td class="reference-name">{{ policy.referenceName }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

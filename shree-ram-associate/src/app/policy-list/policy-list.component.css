@@ -1,0 +1,298 @@
+.policy-list-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+}
+
+.policy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.header-content h1 {
+  font-size: 28px;
+  color: #333;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+}
+
+.header-content p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.btn-add-policy {
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-add-policy:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+  background: white;
+  padding: 60px 40px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.loading-state p,
+.error-state p,
+.empty-state p {
+  font-size: 16px;
+  color: #666;
+  margin: 16px 0;
+}
+
+.empty-state h2 {
+  font-size: 24px;
+  color: #333;
+  margin: 0 0 16px 0;
+}
+
+.error-state {
+  background: #fff5f5;
+  border-left: 4px solid #ff6b6b;
+}
+
+.error-state p {
+  color: #c92a2a;
+}
+
+.policies-table-wrapper {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.policies-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.policies-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.policies-table thead th {
+  padding: 18px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.policies-table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+  transition: background-color 0.2s ease;
+}
+
+.policies-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.policies-table tbody td {
+  padding: 16px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.policy-number {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.vehicle-info {
+  display: block;
+  font-weight: 500;
+}
+
+.registration {
+  display: block;
+  color: #999;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.premium-amount {
+  font-weight: 600;
+  color: #10b981;
+  font-size: 15px;
+}
+
+.document-badge {
+  display: inline-block;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.btn-view:hover {
+  background: rgba(59, 130, 246, 0.1);
+  transform: scale(1.05);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .policy-header {
+    flex-direction: column;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  .btn-add-policy {
+    width: 100%;
+  }
+
+  .policies-table thead th,
+  .policies-table tbody td {
+    padding: 12px 8px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .policy-list-container {
+    padding: 20px 16px;
+  }
+
+  .policy-header {
+    padding: 20px;
+  }
+
+  .header-content h1 {
+    font-size: 20px;
+  }
+
+  .policies-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .policies-table {
+    min-width: 900px;
+  }
+
+  .policies-table thead th,
+  .policies-table tbody td {
+    padding: 12px 10px;
+    font-size: 11px;
+  }
+
+  .vehicle-info {
+    font-size: 12px;
+  }
+
+  .registration {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .policy-list-container {
+    padding: 16px 12px;
+  }
+
+  .policy-header {
+    padding: 16px;
+  }
+
+  .header-content h1 {
+    font-size: 18px;
+  }
+
+  .policies-table {
+    min-width: 700px;
+  }
+
+  .policies-table thead th,
+  .policies-table tbody td {
+    padding: 10px 8px;
+    font-size: 10px;
+  }
+}
