@@ -11,7 +11,7 @@ export interface LogoutResponse {
   providedIn: 'root'
 })
 export class UserService {
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = 'http://localhost:3001/api';
 
   constructor(private http: HttpClient) { }
 

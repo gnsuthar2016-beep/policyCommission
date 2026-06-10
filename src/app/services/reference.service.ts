@@ -5,15 +5,15 @@ import { Observable } from 'rxjs';
 @Injectable({
   providedIn: 'root'
 })
-export class CustomerService {
-  private apiUrl = 'http://localhost:3000/api/customer';
+export class ReferenceService {
+  private apiUrl = 'http://localhost:3001/api/reference';
 
   constructor(private http: HttpClient) {}
 
-  // Save Customer
-  saveCustomer(data: { 
+  // Save Reference
+  saveReference(data: { 
     name: string; 
-    mobileNumber: string; 
+    mobileNumber: string;
     alternativeMobileNumber?: string;
     emailId: string;
     dateOfBirth?: string;
@@ -22,25 +22,25 @@ export class CustomerService {
     return this.http.post<any>(this.apiUrl, data);
   }
 
-  // Get all Customers
-  getAllCustomers(): Observable<any> {
+  // Get all References
+  getAllReferences(): Observable<any> {
     return this.http.get<any>(this.apiUrl);
   }
 
-  // Get Customer by ID
-  getCustomerById(id: number): Observable<any> {
+  // Get Reference by ID
+  getReferenceById(id: number): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/${id}`);
   }
 
-  // Delete Customer by ID
-  deleteCustomer(id: number): Observable<any> {
+  // Delete Reference by ID
+  deleteReference(id: number): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/${id}`);
   }
 
-  // Update Customer by ID
-  updateCustomer(id: number, data: { 
+  // Update Reference by ID
+  updateReference(id: number, data: { 
     name: string; 
-    mobileNumber: string; 
+    mobileNumber: string;
     alternativeMobileNumber?: string;
     emailId: string;
     dateOfBirth?: string;
