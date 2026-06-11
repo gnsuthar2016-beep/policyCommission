@@ -4,13 +4,30 @@
       <h1>Shree Ram Associate</h1>
     </div>
 
-    <div class="header-nav">
+    <!-- Hamburger Menu Button for Mobile -->
+    <button class="hamburger-btn" (click)="toggleMobileMenu()" [class.active]="showMobileMenu">
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+    </button>
+
+    <!-- Desktop Navigation -->
+    <div class="header-nav desktop-nav">
       <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">Dashboard</a>
       <a routerLink="/policies" routerLinkActive="active" class="nav-link">Policies</a>
       <a routerLink="/customer-master" routerLinkActive="active" class="nav-link">Customers</a>
       <a routerLink="/reference-master" routerLinkActive="active" class="nav-link">References</a>
       <a routerLink="/misc-master" routerLinkActive="active" class="nav-link">Misc Master</a>
     </div>
+
+    <!-- Mobile Navigation Menu -->
+    <nav class="mobile-menu" *ngIf="showMobileMenu" [@slideIn]>
+      <a routerLink="/dashboard" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Dashboard</a>
+      <a routerLink="/policies" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Policies</a>
+      <a routerLink="/customer-master" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Customers</a>
+      <a routerLink="/reference-master" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">References</a>
+      <a routerLink="/misc-master" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Misc Master</a>
+    </nav>
 
     <div class="header-right">
       <div class="user-profile" *ngIf="user" (mouseenter)="onMouseEnter()" (mouseleave)="onMouseLeave()">

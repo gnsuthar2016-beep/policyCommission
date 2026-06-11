@@ -106,10 +106,17 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     this.customerService.getAllCustomers().subscribe({
       next: (response) => {
         if (response.success && response.data && Array.isArray(response.data)) {
-          // Extract just the names from customers and filter out N/A
+          // Extract just the names from customers and filter out N/A, empty, and invalid entries
           this.customerNames = response.data
             .map((customer: any) => customer.name)
-            .filter((name: string) => name && name.trim() !== '' && name !== 'N/A')
+            .filter((name: string) => {
+              // Only keep non-empty, non-N/A names
+              return name && 
+                     name.trim() !== '' && 
+                     name.toLowerCase() !== 'n/a' &&
+                     name !== null &&
+                     name !== undefined;
+            })
             .sort();
           console.log('Loaded Customer Names:', this.customerNames);
         } else {
@@ -182,6 +189,13 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
         if (response.success) {
           const policy = response.data;
           
+          // Extra validation: Check if customer name is N/A or invalid
+          if (!policy.customerName || policy.customerName === 'N/A' || policy.customerName.trim() === '') {
+            alert('⚠ ERROR: This policy has an invalid customer name in the database (N/A or empty).\n\nPlease contact the administrator to correct this data before editing.');
+            this.router.navigate(['/policies']);
+            return;
+          }
+          
           // Format date fields for proper display in HTML date inputs
           const formattedPolicy = {
             ...policy,
@@ -253,7 +267,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       customerName: ['', Validators.required],
       policyType: ['', Validators.required],
       renewal: ['', Validators.required],
-      insuredName: ['', [Validators.required, Validators.minLength(3)]],
+      //insuredName: ['', [Validators.required, Validators.minLength(3)]],
       policyNumber: ['', [Validators.required, Validators.minLength(5)]],
       referenceName: ['', Validators.required],
       companyName: ['', Validators.required],
@@ -603,7 +617,6 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       customerName: 'Customer Name',
       policyType: 'Policy Type',
       renewal: 'Renewal',
-      insuredName: 'Insured Name',
       policyNumber: 'Policy Number',
       referenceName: 'Reference Name',
       companyName: 'Company Name',

@@ -9,18 +9,21 @@ const Policy = sequelize.define('Policy', {
   },
   customerName: {
     type: DataTypes.STRING,
-    allowNull: true,
-    defaultValue: 'N/A'
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+      isNotNA(value) {
+        if (value === 'N/A' || value === 'n/a') {
+          throw new Error('Customer name cannot be N/A');
+        }
+      }
+    }
   },
   policyType: {
     type: DataTypes.STRING,
     allowNull: false
   },
   renewal: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  insuredName: {
     type: DataTypes.STRING,
     allowNull: false
   },
@@ -106,15 +109,15 @@ const Policy = sequelize.define('Policy', {
   },
   make: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   model: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   registrationNumber: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   createdAt: {
     type: DataTypes.DATE,

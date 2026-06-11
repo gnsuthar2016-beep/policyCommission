@@ -1,7 +1,7 @@
 .policy-list-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 24px 16px;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   min-height: 100vh;
 }
@@ -10,33 +10,33 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
   background: white;
-  padding: 30px;
+  padding: 18px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .header-content h1 {
-  font-size: 28px;
+  font-size: 24px;
   color: #333;
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
   font-weight: 700;
 }
 
 .header-content p {
-  font-size: 14px;
+  font-size: 13px;
   color: #666;
   margin: 0;
 }
 
 .btn-add-policy {
-  padding: 12px 28px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 8px 18px;
+  background: linear-gradient(135deg, #61a6f8 0%, #4a89d9 100%);
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -44,15 +44,15 @@
 }
 
 .btn-add-policy:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(97, 166, 248, 0.3);
 }
 
 .loading-state,
 .error-state,
 .empty-state {
   background: white;
-  padding: 60px 40px;
+  padding: 40px 24px;
   border-radius: 12px;
   text-align: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -61,15 +61,15 @@
 .loading-state p,
 .error-state p,
 .empty-state p {
-  font-size: 16px;
+  font-size: 14px;
   color: #666;
-  margin: 16px 0;
+  margin: 12px 0;
 }
 
 .empty-state h2 {
-  font-size: 24px;
+  font-size: 20px;
   color: #333;
-  margin: 0 0 16px 0;
+  margin: 0 0 12px 0;
 }
 
 .error-state {
@@ -95,7 +95,7 @@
 }
 
 .policies-table thead {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #61a6f8 0%, #4a89d9 100%);
   color: white;
 }
 

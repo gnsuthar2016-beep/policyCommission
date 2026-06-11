@@ -1,8 +1,8 @@
 .app-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #61a6f8 0%, #4a89d9 100%);
   color: white;
   padding: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(97, 166, 248, 0.2);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -11,17 +11,17 @@
 .header-container {
   max-width: 100%;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 60px;
-  gap: 40px;
+  height: 56px;
+  gap: 24px;
 }
 
 .header-brand h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: 0.5px;
   white-space: nowrap;
@@ -29,16 +29,16 @@
 
 .header-nav {
   display: flex;
-  gap: 32px;
+  gap: 20px;
   flex: 1;
 }
 
 .nav-link {
   color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  padding: 8px 12px;
+  padding: 4px 8px;
   border-radius: 4px;
   transition: all 0.3s ease;
   position: relative;
@@ -66,25 +66,25 @@
 }
 
 .user-button {
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   color: white;
-  padding: 8px 16px;
-  border-radius: 24px;
+  padding: 6px 12px;
+  border-radius: 20px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 6px;
+  font-size: 13px;
   font-weight: 500;
   transition: all 0.3s ease;
   white-space: nowrap;
 }
 
 .user-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
 }
 
 .user-icon {
@@ -104,18 +104,19 @@
   right: 0;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  margin-top: 8px;
-  min-width: 300px;
+  box-shadow: 0 8px 24px rgba(97, 166, 248, 0.15);
+  margin-top: 6px;
+  min-width: 280px;
   color: #333;
   z-index: 1000;
   animation: slideDown 0.2s ease;
+  border: 1px solid rgba(97, 166, 248, 0.08);
 }
 
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
@@ -124,21 +125,23 @@
 }
 
 .menu-header {
-  padding: 16px;
+  padding: 12px 14px;
   text-align: center;
+  background: linear-gradient(135deg, rgba(97, 166, 248, 0.05) 0%, rgba(74, 137, 217, 0.05) 100%);
+  border-bottom: 1px solid rgba(97, 166, 248, 0.08);
 }
 
 .menu-header strong {
   display: block;
-  font-size: 16px;
-  margin-bottom: 4px;
+  font-size: 14px;
+  margin-bottom: 2px;
   color: #333;
   word-break: break-word;
 }
 
 .menu-header small {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   color: #999;
   word-break: break-all;
 }
@@ -146,18 +149,18 @@
 .menu-divider {
   height: 1px;
   background: #eee;
-  margin: 8px 0;
+  margin: 6px 0;
 }
 
 .session-info {
-  padding: 12px 16px;
-  font-size: 13px;
+  padding: 10px 14px;
+  font-size: 12px;
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .info-item:last-child {
@@ -167,35 +170,38 @@
 .info-item label {
   color: #666;
   font-weight: 600;
-  font-size: 12px;
-  margin-bottom: 4px;
+  font-size: 11px;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .info-item span {
   color: #333;
   font-family: 'Courier New', monospace;
-  font-size: 13px;
+  font-size: 12px;
   background: #f5f5f5;
-  padding: 6px 8px;
-  border-radius: 4px;
+  padding: 5px 6px;
+  border-radius: 3px;
   word-break: break-word;
+  border-left: 2px solid #61a6f8;
 }
 
 .logout-btn {
   width: 100%;
-  padding: 12px;
-  background: #ff6b6b;
+  padding: 10px;
+  background: #61a6f8;
   border: none;
   color: white;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   border-radius: 0 0 8px 8px;
   cursor: pointer;
   transition: background 0.3s ease;
 }
 
 .logout-btn:hover {
-  background: #ff5252;
+  background: #4a89d9;
 }
 
 .logout-btn:active {
@@ -227,15 +233,15 @@
   .header-container {
     padding: 0 12px;
     gap: 12px;
+    position: relative;
   }
 
   .header-brand h1 {
     font-size: 14px;
   }
 
-  .header-nav {
-    gap: 8px;
-    display: none;
+  .desktop-nav {
+    display: none !important;
   }
 
   .user-name {
@@ -243,8 +249,99 @@
   }
 
   .user-menu {
-    min-width: 250px;
-    right: -50%;
-    transform: translateX(50%);
+    position: fixed;
+    top: 56px;
+    right: 0;
+    left: auto;
+    min-width: auto;
+    width: calc(100vw - 24px);
+    max-width: 300px;
+    transform: none;
+    margin-right: 12px;
+  }
+
+  /* Hamburger Menu Button */
+  .hamburger-btn {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    order: 1;
+  }
+
+  .hamburger-line {
+    width: 24px;
+    height: 2.5px;
+    background: white;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    display: block;
+  }
+
+  .hamburger-btn.active .hamburger-line:nth-child(1) {
+    transform: rotate(45deg) translate(8px, 8px);
+  }
+
+  .hamburger-btn.active .hamburger-line:nth-child(2) {
+    opacity: 0;
+  }
+
+  .hamburger-btn.active .hamburger-line:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -7px);
+  }
+
+  /* Mobile Menu */
+  .mobile-menu {
+    position: absolute;
+    top: 56px;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #61a6f8 0%, #4a89d9 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(97, 166, 248, 0.2);
+    z-index: 99;
+  }
+
+  .mobile-nav-link {
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 14px 16px;
+    border-left: 3px solid transparent;
+    transition: all 0.3s ease;
+    display: block;
+  }
+
+  .mobile-nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-left-color: white;
+    color: white;
+  }
+
+  .mobile-nav-link.active {
+    background: rgba(255, 255, 255, 0.15);
+    border-left-color: white;
+    color: white;
+  }
+}
+
+@media (min-width: 601px) {
+  .hamburger-btn {
+    display: none !important;
+  }
+
+  .mobile-menu {
+    display: none !important;
+  }
+
+  .desktop-nav {
+    display: flex !important;
   }
 }

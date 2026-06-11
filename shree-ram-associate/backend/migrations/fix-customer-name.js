@@ -14,22 +14,27 @@ async function fixCustomerNameColumn() {
     );
 
     if (result.length > 0) {
-      console.log('customerName column found. Dropping it...');
-      // Drop the existing column
+      console.log('customerName column found. Checking for N/A values...');
+      
+      // Check and log any N/A or NULL values
+      const naCheck = await sequelize.query(
+        `SELECT COUNT(*) as count FROM "policies" WHERE "customerName" = 'N/A' OR "customerName" IS NULL`,
+        { type: QueryTypes.SELECT, raw: true }
+      );
+      
+      if (naCheck[0].count > 0) {
+        console.log(`⚠ Found ${naCheck[0].count} policies with N/A or NULL customer names`);
+        console.log('⚠ These need manual review and correction');
+      }
+    } else {
+      console.log('Creating customerName column with NOT NULL constraint...');
+      // Create the column without default N/A
       await sequelize.query(
-        'ALTER TABLE "policies" DROP COLUMN "customerName"',
+        'ALTER TABLE "policies" ADD COLUMN "customerName" VARCHAR(255) NOT NULL',
         { raw: true }
       );
-      console.log('✓ Column dropped successfully');
+      console.log('✓ Column created successfully');
     }
-
-    console.log('Creating customerName column with proper constraints...');
-    // Create the column with proper constraints
-    await sequelize.query(
-      'ALTER TABLE "policies" ADD COLUMN "customerName" VARCHAR(255) DEFAULT \'N/A\'',
-      { raw: true }
-    );
-    console.log('✓ Column created successfully with default value');
 
     return true;
   } catch (error) {

@@ -5,16 +5,38 @@ const Policy = require('../models/Policy');
 const Document = require('../models/Document');
 const sequelize = require('../config/database');
 
+// Helper function to sanitize policy data - removes N/A or null customer names
+const sanitizePolicyData = (policy) => {
+  if (policy && (policy.customerName === 'N/A' || !policy.customerName || policy.customerName.trim() === '')) {
+    console.warn(`⚠ Detected N/A or empty customer name in policy ${policy.id}. This should not happen.`);
+    // Log for debugging
+    return null; // Return null to indicate invalid policy
+  }
+  return policy;
+};
+
+// Helper function to validate customerName before save
+const validateCustomerName = (customerName) => {
+  if (!customerName || typeof customerName !== 'string') {
+    return false;
+  }
+  const trimmed = customerName.trim();
+  if (trimmed === '' || trimmed === 'N/A' || trimmed === 'n/a') {
+    return false;
+  }
+  return true;
+};
+
 // Save Policy Details
 router.post('/api/policy', async (req, res) => {
   try {
     const policyData = req.body;
 
     // Validate customerName is provided and not N/A
-    if (!policyData.customerName || policyData.customerName.trim() === '' || policyData.customerName === 'N/A') {
+    if (!validateCustomerName(policyData.customerName)) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide a valid customer name'
+        message: 'Please provide a valid customer name. N/A is not accepted.'
       });
     }
 
@@ -108,6 +130,15 @@ router.get('/api/policy/:id', async (req, res) => {
       });
     }
 
+    // Check for N/A customer name and warn
+    if (!policy.customerName || policy.customerName === 'N/A' || policy.customerName.trim() === '') {
+      console.warn(`⚠ Policy ${policyId} has invalid customer name: "${policy.customerName}". This should not happen.`);
+      return res.status(400).json({
+        success: false,
+        message: 'Policy has invalid customer name. Contact administrator for data correction.'
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: 'Policy details fetched successfully',
@@ -126,7 +157,19 @@ router.get('/api/policy/:id', async (req, res) => {
 // Get All Policies with Documents
 router.get('/api/policies', async (req, res) => {
   try {
+    // Query only policies with valid customer names (not N/A, not null, not empty)
     const policies = await Policy.findAll({
+      where: {
+        [Op.and]: [
+          sequelize.where(sequelize.col('customerName'), Op.ne, 'N/A'),
+          sequelize.where(sequelize.col('customerName'), Op.ne, null),
+          sequelize.where(
+            sequelize.fn('TRIM', sequelize.col('customerName')), 
+            Op.ne, 
+            ''
+          )
+        ]
+      },
       include: [
         {
           model: Document,
@@ -148,6 +191,49 @@ router.get('/api/policies', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching policies',
+      error: error.message
+    });
+  }
+});
+
+// Admin endpoint to view ALL policies including those with N/A customer names
+router.get('/api/policies/admin/all', async (req, res) => {
+  try {
+    const allPolicies = await Policy.findAll({
+      include: [
+        {
+          model: Document,
+          as: 'documents',
+          attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Separate valid and invalid policies for admin review
+    const validPolicies = allPolicies.filter(p => 
+      p.customerName && p.customerName !== 'N/A' && p.customerName.trim() !== ''
+    );
+    const invalidPolicies = allPolicies.filter(p => 
+      !p.customerName || p.customerName === 'N/A' || p.customerName.trim() === ''
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'All policies fetched (including invalid ones)',
+      validCount: validPolicies.length,
+      invalidCount: invalidPolicies.length,
+      total: allPolicies.length,
+      data: {
+        valid: validPolicies,
+        invalid: invalidPolicies
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching all policies:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching all policies',
       error: error.message
     });
   }
@@ -207,10 +293,10 @@ router.put('/api/policy/:id', async (req, res) => {
     }
 
     // Validate customerName is provided and not N/A
-    if (!policyData.customerName || policyData.customerName.trim() === '' || policyData.customerName === 'N/A') {
+    if (!validateCustomerName(policyData.customerName)) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide a valid customer name'
+        message: 'Please provide a valid customer name. N/A is not accepted.'
       });
     }
 
@@ -596,6 +682,208 @@ router.get('/api/policies/renewal', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching renewal policies',
+      error: error.message
+    });
+  }
+});
+
+// Admin Endpoint: Delete policies with N/A customer names
+router.delete('/api/admin/policies/cleanup/na', async (req, res) => {
+  try {
+    console.log('⚠ Running cleanup: deleting policies with N/A customer names...');
+    
+    // Find all policies with N/A customer names
+    const naPolicies = await Policy.findAll({
+      where: {
+        [Op.or]: [
+          { customerName: 'N/A' },
+          { customerName: null },
+          sequelize.where(
+            sequelize.fn('TRIM', sequelize.col('customerName')), 
+            Op.eq, 
+            ''
+          )
+        ]
+      }
+    });
+
+    console.log(`Found ${naPolicies.length} policies with N/A customer names`);
+
+    if (naPolicies.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'No policies with N/A customer names found',
+        deletedCount: 0
+      });
+    }
+
+    // Delete documents associated with these policies first
+    const policyIds = naPolicies.map(p => p.id);
+    const deletedDocs = await Document.destroy({
+      where: { policyId: { [Op.in]: policyIds } }
+    });
+
+    // Delete the policies
+    const deletedCount = await Policy.destroy({
+      where: { id: { [Op.in]: policyIds } }
+    });
+
+    console.log(`✓ Deleted ${deletedCount} policies and ${deletedDocs} documents with N/A customer names`);
+
+    res.status(200).json({
+      success: true,
+      message: `Cleanup completed: ${deletedCount} policies with N/A customer names deleted`,
+      deletedPolicies: deletedCount,
+      deletedDocuments: deletedDocs,
+      policyIds: policyIds
+    });
+  } catch (error) {
+    console.error('✗ Error during cleanup:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error during cleanup operation',
+      error: error.message
+    });
+  }
+});
+
+// Test Endpoint: Add sample policies for testing
+router.post('/api/test/sample-policies', async (req, res) => {
+  try {
+    console.log('Checking for existing sample policies...');
+
+    // Check if sample policies already exist
+    const existingCount = await Policy.count({
+      where: {
+        policyNumber: { [Op.in]: ['POL001', 'POL002', 'POL003'] }
+      }
+    });
+
+    if (existingCount > 0) {
+      console.log(`Found ${existingCount} existing sample policies`);
+      // Fetch and return existing policies
+      const existingPolicies = await Policy.findAll({
+        where: {
+          policyNumber: { [Op.in]: ['POL001', 'POL002', 'POL003'] }
+        },
+        include: [
+          {
+            model: Document,
+            as: 'documents',
+            attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate']
+          }
+        ]
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Sample policies already exist',
+        count: existingPolicies.length,
+        data: existingPolicies
+      });
+    }
+
+    console.log('Creating sample policies for testing...');
+
+    const samplePolicies = [
+      {
+        customerName: 'Rajesh Kumar',
+        policyType: 'Four Wheeler',
+        renewal: 'Yes',
+        policyNumber: 'POL001',
+        referenceName: 'John Broker',
+        companyName: 'ICICI Lombard',
+        insuranceType: 'Comprehensive',
+        productName: 'Four Wheeler Insurance',
+        periodFrom: new Date('2024-01-01'),
+        periodTo: new Date('2025-01-01'),
+        policyDate: new Date('2024-01-01'),
+        basicODPremium: 5000,
+        tpPremium: 2000,
+        ncb: 500,
+        netPremium: 6500,
+        gstPercent: 18,
+        gstAmount: 1170,
+        finalPremium: 7670,
+        refBrokerageOn: 'Basic',
+        refBrokeragePercent: 15,
+        refBrokerageAmount: 750,
+        totalIDV: 500000,
+        make: 'Maruti',
+        model: 'Swift',
+        registrationNumber: 'DL01AB1234'
+      },
+      {
+        customerName: 'Priya Singh',
+        policyType: 'Two Wheeler',
+        renewal: 'No',
+        policyNumber: 'POL002',
+        referenceName: 'Sarah Agent',
+        companyName: 'Bajaj Allianz',
+        insuranceType: 'Third Party',
+        productName: 'Two Wheeler Insurance',
+        periodFrom: new Date('2024-06-15'),
+        periodTo: new Date('2025-06-15'),
+        policyDate: new Date('2024-06-15'),
+        basicODPremium: 1200,
+        tpPremium: 800,
+        ncb: 0,
+        netPremium: 2000,
+        gstPercent: 18,
+        gstAmount: 360,
+        finalPremium: 2360,
+        refBrokerageOn: 'Net',
+        refBrokeragePercent: 10,
+        refBrokerageAmount: 200,
+        totalIDV: 80000,
+        make: 'Honda',
+        model: 'CB350',
+        registrationNumber: 'MH02CD5678'
+      },
+      {
+        customerName: 'Amit Patel',
+        policyType: 'Health',
+        renewal: 'Yes',
+        policyNumber: 'POL003',
+        referenceName: 'Mike Advisor',
+        companyName: 'Apollo DKV',
+        insuranceType: 'Comprehensive',
+        productName: 'Health Insurance',
+        periodFrom: new Date('2024-03-01'),
+        periodTo: new Date('2025-03-01'),
+        policyDate: new Date('2024-03-01'),
+        basicODPremium: 15000,
+        tpPremium: 0,
+        ncb: 1500,
+        netPremium: 13500,
+        gstPercent: 18,
+        gstAmount: 2430,
+        finalPremium: 15930,
+        refBrokerageOn: 'Basic',
+        refBrokeragePercent: 5,
+        refBrokerageAmount: 750,
+        totalIDV: 500000,
+        make: null,
+        model: null,
+        registrationNumber: null
+      }
+    ];
+
+    const createdPolicies = await Promise.all(
+      samplePolicies.map(policy => Policy.create(policy))
+    );
+
+    res.status(201).json({
+      success: true,
+      message: `Created ${createdPolicies.length} sample policies`,
+      count: createdPolicies.length,
+      data: createdPolicies
+    });
+  } catch (error) {
+    console.error('Error creating sample policies:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error creating sample policies',
       error: error.message
     });
   }

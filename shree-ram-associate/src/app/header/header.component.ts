@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { UserService } from '../services/user.service';
 import { interval, Subscription } from 'rxjs';
+import { trigger, state, style, transition, animate } from '@angular/animations';
 
 export interface User {
   id: number;
@@ -12,11 +13,23 @@ export interface User {
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
-  styleUrls: ['./header.component.css']
+  styleUrls: ['./header.component.css'],
+  animations: [
+    trigger('slideIn', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(-10px)' }),
+        animate('200ms ease-in', style({ opacity: 1, transform: 'translateY(0)' }))
+      ]),
+      transition(':leave', [
+        animate('200ms ease-out', style({ opacity: 0, transform: 'translateY(-10px)' }))
+      ])
+    ])
+  ]
 })
 export class HeaderComponent implements OnInit, OnDestroy {
   user: User | null = null;
   showUserMenu = false;
+  showMobileMenu = false;
   sessionStartTime: string = '';
   sessionDuration: string = '0s';
   private refreshSubscription: Subscription | null = null;
@@ -101,6 +114,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.closeMenuTimeout = setTimeout(() => {
       this.showUserMenu = false;
     }, 300);
+  }
+
+  toggleMobileMenu(): void {
+    this.showMobileMenu = !this.showMobileMenu;
   }
 
   logout(): void {
