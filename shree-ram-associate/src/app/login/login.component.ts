@@ -2,11 +2,37 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { trigger, transition, style, animate, keyframes } from '@angular/animations';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css']
+  styleUrls: ['./login.component.css'],
+  animations: [
+    trigger('slideIn', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(30px)' }),
+        animate('600ms 300ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+      ])
+    ]),
+    trigger('fadeIn', [
+      transition(':enter', [
+        style({ opacity: 0 }),
+        animate('800ms ease-out', style({ opacity: 1 }))
+      ])
+    ]),
+    trigger('shake', [
+      transition(':enter', [
+        animate('600ms', keyframes([
+          style({ transform: 'translateX(0)', offset: 0 }),
+          style({ transform: 'translateX(-10px)', offset: 0.25 }),
+          style({ transform: 'translateX(10px)', offset: 0.5 }),
+          style({ transform: 'translateX(-10px)', offset: 0.75 }),
+          style({ transform: 'translateX(0)', offset: 1 })
+        ]))
+      ])
+    ])
+  ]
 })
 export class LoginComponent implements OnInit {
   form!: FormGroup;

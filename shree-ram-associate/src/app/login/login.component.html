@@ -1,44 +1,84 @@
 <div class="auth-page">
-  <div class="auth-card">
-    <div class="brand">
-      <div class="logo">SR</div>
-      <div>
+  <div class="animated-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <div class="auth-card" [@slideIn]>
+    <div class="brand" [@fadeIn]>
+      <div class="logo-container">
+        <div class="logo">SR</div>
+      </div>
+      <div class="brand-text">
         <h1>Sign in</h1>
-        <p>Access your account</p>
+        <p>Access your insurance management dashboard</p>
       </div>
     </div>
 
-    <div class="error" *ngIf="errorMessage">
+    <div class="error" *ngIf="errorMessage" [@shake]>
+      <span class="error-icon">⚠️</span>
       {{ errorMessage }}
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <label>
-        Email
-        <input type="email" formControlName="email" placeholder="you@example.com" [disabled]="isLoading" />
-      </label>
-      <div class="error" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
-        Enter a valid email.
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate [@fadeIn]>
+      <div class="form-group">
+        <label for="email">
+          <span class="label-icon">📧</span>
+          Email
+        </label>
+        <div class="input-wrapper">
+          <input 
+            id="email"
+            type="email" 
+            formControlName="email" 
+            placeholder="you@example.com" 
+            [disabled]="isLoading"
+            class="form-input"
+          />
+          <div class="input-focus-effect"></div>
+        </div>
+        <div class="error-text" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
+          ✗ Enter a valid email.
+        </div>
       </div>
 
-      <label>
-        Password
-        <input type="password" formControlName="password" placeholder="••••••••" [disabled]="isLoading" />
-      </label>
-      <div class="error" *ngIf="form.get('password')?.touched && form.get('password')?.invalid">
-        Password is required (min 6 chars).
+      <div class="form-group">
+        <label for="password">
+          <span class="label-icon">🔒</span>
+          Password
+        </label>
+        <div class="input-wrapper">
+          <input 
+            id="password"
+            type="password" 
+            formControlName="password" 
+            placeholder="••••••••" 
+            [disabled]="isLoading"
+            class="form-input"
+          />
+          <div class="input-focus-effect"></div>
+        </div>
+        <div class="error-text" *ngIf="form.get('password')?.touched && form.get('password')?.invalid">
+          ✗ Password is required (min 6 chars).
+        </div>
       </div>
 
-      <button class="primary" type="submit" [disabled]="isLoading">
-        {{ isLoading ? 'Signing in...' : 'Sign in' }}
+      <button class="btn-primary" type="submit" [disabled]="isLoading" [class.loading]="isLoading">
+        <span class="btn-text">{{ isLoading ? 'Signing in...' : 'Sign in' }}</span>
+        <span class="btn-icon" *ngIf="!isLoading">→</span>
+        <span class="btn-loader" *ngIf="isLoading"></span>
       </button>
     </form>
 
-    <div class="links">
-      <a (click)="goTo('register')">Create account</a>
-      <div style="display:flex;gap:8px">
-        <a (click)="goTo('forgot-password')">Forgot?</a>
-        <a (click)="goTo('change-password')">Change</a>
+    <div class="links" [@fadeIn]>
+      <div class="link-group">
+        <a (click)="goTo('register')" class="link-item">Create account</a>
+      </div>
+      <div class="link-group">
+        <a (click)="goTo('forgot-password')" class="link-item">Forgot password?</a>
+        <span class="link-divider">•</span>
+        <a (click)="goTo('change-password')" class="link-item">Change password</a>
       </div>
     </div>
   </div>
