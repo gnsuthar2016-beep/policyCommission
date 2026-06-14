@@ -283,7 +283,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       gstPercent: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       gstAmount: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       finalPremium: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      refBrokerageOn: ['', Validators.required],
+      refBrokerageOn: ['', [Validators.required,Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       refBrokeragePercent: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       refBrokerageAmount: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       totalIDV: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
@@ -795,6 +795,10 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     return refBrokerageAmount;
   }
 
+  getRefBrokerageOn(): number {
+    return this.form.get('netPremium')?.value || 0;
+  }
+
   /**
    * Calculate and update Ref. Brokerage Amount
    * Formula: Ref. Brokerage Amount = Ref. Brokerage On (Net Premium) × Ref Brokerage% / 100
@@ -805,6 +809,12 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
 
     // Calculate Ref. Brokerage Amount
     const refBrokerageAmount = (parseFloat(netPremium) * parseFloat(refBrokeragePercent)) / 100;
+
+// Update the Ref. Brokerage Amount field (for storing if needed)
+    this.form.patchValue(
+      { refBrokerageOn: parseFloat(netPremium).toFixed(2) },
+      { emitEvent: false }
+    );
 
     // Update the Ref. Brokerage Amount field (for storing if needed)
     this.form.patchValue(

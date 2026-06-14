@@ -254,7 +254,7 @@
         <!-- Ref. Brokerage On (Auto-populated from Net Premium) -->
         <div class="form-group">
           <label for="refBrokerageOn">Ref. Brokerage On <span class="required">*</span></label>
-          <input type="text" id="refBrokerageOn" [value]="form.get('netPremium')?.value || 0 | number:'1.2-2'" class="form-control" 
+          <input type="text" id="refBrokerageOn" [value]="getRefBrokerageOn() | number:'1.2-2'" class="form-control" 
                  readonly disabled placeholder="Auto-populated from Net Premium" style="background-color: #f5f5f5; cursor: not-allowed;">
           <small style="color: #666;">Auto-populated from Net Premium value</small>
         </div>
