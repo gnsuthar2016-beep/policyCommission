@@ -363,6 +363,9 @@
               Upload Document
             </button>
           </div>
+          <div class="error-message" *ngIf="documentUploadError">
+            {{ documentUploadError }}
+          </div>
         </div>
 
         <!-- Documents Table -->

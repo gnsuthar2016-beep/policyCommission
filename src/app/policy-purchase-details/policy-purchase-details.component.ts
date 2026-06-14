@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { PolicyService } from '../services/policy.service';
 import { MiscMasterService } from '../services/misc-master.service';
 import { CustomerService } from '../services/customer.service';
@@ -17,6 +18,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   addCustomerForm!: FormGroup;
   addReferenceForm!: FormGroup;
   documents: any[] = [];
+  documentUploadError = '';
   isEditMode = false;
   policyId: number | null = null;
   loading = false;
@@ -217,7 +219,8 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
               documentType: doc.documentType,
               fileName: doc.fileName,
               fileSize: doc.fileSize,
-              uploadDate: doc.uploadDate
+              uploadDate: doc.uploadDate,
+              filePath: doc.filePath
             }));
           }
         } else {
@@ -340,12 +343,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
         // Ensure dates are in ISO string format
         periodFrom: formatDateToISO(formData.periodFrom),
         periodTo: formatDateToISO(formData.periodTo),
-        policyDate: formatDateToISO(formData.policyDate),
-        documents: this.documents.map(doc => ({
-          documentType: doc.documentType,
-          fileName: doc.fileName,
-          fileSize: doc.fileSize
-        }))
+        policyDate: formatDateToISO(formData.policyDate)
       };
       
       console.log('Complete Payload Being Sent to API:', policyPayload);
@@ -356,13 +354,17 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
         : this.policyService.savePolicy(policyPayload);
 
       apiCall.subscribe({
-        next: (response) => {
+        next: async (response) => {
           if (response.success) {
             const policyId = response.policyId;
             const mode = this.isEditMode ? 'updated' : 'created';
+            
+            if (!this.isEditMode && this.documents.some(doc => !!doc.file && !doc.filePath)) {
+              await this.uploadPendingDocuments(policyId);
+            }
+
             alert(`Policy Details ${mode} Successfully!\nPolicy ID: ${policyId}`);
             console.log('Policy saved:', response);
-            // Redirect to policy list
             this.router.navigate(['/policies']);
           } else {
             alert('Error saving policy: ' + response.message);
@@ -475,29 +477,101 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   }
 
   addDocument(fileInput: HTMLInputElement): void {
+    this.documentUploadError = '';
+
     if (this.documentForm.invalid || !fileInput.files?.length) {
       this.documentForm.markAllAsTouched();
+      this.documentUploadError = 'Please select a document and type before uploading.';
       return;
     }
 
     const file = fileInput.files[0];
     const documentType = this.documentForm.get('documentType')?.value;
 
-    const documentEntry = {
+    if (!file) {
+      this.documentUploadError = 'Please select a valid file.';
+      return;
+    }
+
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff'];
+    if (!allowedTypes.includes(file.type)) {
+      this.documentUploadError = 'Only image and PDF files are allowed.';
+      return;
+    }
+
+    if (file.size > 1 * 1024 * 1024) {
+      this.documentUploadError = 'Maximum file size is 1MB.';
+      return;
+    }
+
+    const documentEntry: any = {
       id: this.documents.length + 1,
-      documentType: documentType,
+      documentType,
       fileName: file.name,
       fileSize: (file.size / 1024).toFixed(2) + ' KB',
-      uploadDate: new Date().toLocaleString(),
-      file: file
+      uploadDate: new Date().toLocaleString()
     };
 
+    if (this.isEditMode && this.policyId) {
+      const formData = new FormData();
+      formData.append('documentType', documentType);
+      formData.append('document', file);
+
+      this.policyService.addDocumentToPolicy(this.policyId, formData).subscribe({
+        next: (response) => {
+          if (response.success) {
+            const savedDoc = response.data;
+            this.documents.push({
+              id: savedDoc.id,
+              documentType: savedDoc.documentType,
+              fileName: savedDoc.fileName,
+              fileSize: savedDoc.fileSize,
+              uploadDate: savedDoc.uploadDate,
+              filePath: savedDoc.filePath
+            });
+            this.documentForm.reset();
+            fileInput.value = '';
+          } else {
+            this.documentUploadError = response.message || 'Unable to upload document.';
+          }
+        },
+        error: (error) => {
+          this.documentUploadError = error.error?.message || 'Unable to upload document.';
+          console.error('Error uploading document:', error);
+        }
+      });
+      return;
+    }
+
+    documentEntry.file = file;
     this.documents.push(documentEntry);
     this.documentForm.reset();
     fileInput.value = '';
   }
 
   removeDocument(id: number): void {
+    const document = this.documents.find(doc => doc.id === id);
+    if (!document) {
+      return;
+    }
+
+    if (document.filePath && document.id && !document.file) {
+      this.policyService.deleteDocument(document.id).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.documents = this.documents.filter(doc => doc.id !== id);
+          } else {
+            alert('Unable to delete document: ' + response.message);
+          }
+        },
+        error: (error) => {
+          console.error('Error deleting document:', error);
+          alert('Error deleting document. Please try again.');
+        }
+      });
+      return;
+    }
+
     this.documents = this.documents.filter(doc => doc.id !== id);
   }
 
@@ -507,22 +581,17 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
    * Otherwise, it's from the database and needs to be fetched from server
    */
   viewDocument(document: any): void {
-    console.log('View Document called:', document);
-    console.log('Has file property:', !!document.file);
-
-    // If document has a file object (newly uploaded), download it directly
-    if (document.file) {
-      console.log('Downloading file:', document.fileName);
-      this.downloadFile(document.file, document.fileName);
-    } else {
-      // If document is from database, we would need to fetch it from server
-      // For now, show a message that it needs to be downloaded from server
-      alert(`Document: ${document.fileName}\nType: ${document.documentType}\nSize: ${document.fileSize}\n\nNote: This document needs to be downloaded from the server.`);
-      // In a real scenario, you would call a service to download from the server:
-      // this.policyService.downloadDocument(document.id).subscribe(blob => {
-      //   this.downloadFile(blob, document.fileName);
-      // });
+    if (document.filePath) {
+      window.open(document.filePath, '_blank');
+      return;
     }
+
+    if (document.file) {
+      this.downloadFile(document.file, document.fileName);
+      return;
+    }
+
+    alert(`Document: ${document.fileName}\nType: ${document.documentType}\nSize: ${document.fileSize}\n\nNo preview or download URL is available.`);
   }
 
   /**
@@ -685,6 +754,28 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       remark: 'Remark'
     };
     return labels[field] || field;
+  }
+
+  private async uploadPendingDocuments(policyId: number): Promise<void> {
+    for (const document of this.documents.filter(doc => doc.file && !doc.filePath)) {
+      const formData = new FormData();
+      formData.append('documentType', document.documentType);
+      formData.append('document', document.file);
+
+      try {
+        const response: any = await firstValueFrom(this.policyService.addDocumentToPolicy(policyId, formData));
+        if (response.success) {
+          document.id = response.data.id;
+          document.filePath = response.data.filePath;
+          delete document.file;
+        } else {
+          throw new Error(response.message || 'Upload failed');
+        }
+      } catch (error) {
+        console.error('Error uploading pending document:', error);
+        alert(`Failed to upload document ${document.fileName}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
   }
 
   get documentTypeControl() {

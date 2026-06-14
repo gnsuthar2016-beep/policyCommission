@@ -1,9 +1,48 @@
 const express = require('express');
+const multer = require('multer');
+const streamifier = require('streamifier');
+const { v2: cloudinary } = require('cloudinary');
 const router = express.Router();
 const { QueryTypes, Op } = require('sequelize');
 const Policy = require('../models/Policy');
 const Document = require('../models/Document');
 const sequelize = require('../config/database');
+
+const cloudinarySettings = {
+  secure: true,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || null,
+  api_key: process.env.CLOUDINARY_API_KEY || null,
+  api_secret: process.env.CLOUDINARY_API_SECRET || null
+};
+
+if (process.env.CLOUDINARY_URL) {
+  cloudinary.config({ secure: true });
+} else if (cloudinarySettings.cloud_name && cloudinarySettings.api_key && cloudinarySettings.api_secret) {
+  cloudinary.config(cloudinarySettings);
+} else {
+  console.warn('⚠ Cloudinary is not configured. Set CLOUDINARY_URL or CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET in environment.');
+}
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 1 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/bmp',
+      'image/tiff'
+    ];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image and PDF files are allowed'));
+    }
+  }
+});
 
 // Helper function to sanitize policy data - removes N/A or null customer names
 const sanitizePolicyData = (policy) => {
@@ -118,7 +157,7 @@ router.get('/api/policy/:id', async (req, res) => {
         {
           model: Document,
           as: 'documents',
-          attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate']
+          attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate', 'filePath', 'cloudinaryPublicId']
         }
       ]
     });
@@ -174,7 +213,7 @@ router.get('/api/policies', async (req, res) => {
         {
           model: Document,
           as: 'documents',
-          attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate']
+          attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate', 'filePath', 'cloudinaryPublicId']
         }
       ],
       order: [['createdAt', 'DESC']]
@@ -240,12 +279,43 @@ router.get('/api/policies/admin/all', async (req, res) => {
 });
 
 // Add Document to Policy
-router.post('/api/policy/:id/document', async (req, res) => {
+router.post('/api/policy/:id/document', (req, res, next) => {
+  upload.single('document')(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({
+          success: false,
+          message: err.code === 'LIMIT_FILE_SIZE'
+            ? 'File size must be 1MB or less'
+            : err.message
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'File upload failed'
+      });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     const policyId = req.params.id;
-    const { documentType, fileName, fileSize } = req.body;
+    const { documentType } = req.body;
 
-    // Check if policy exists
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Document file is required'
+      });
+    }
+
+    if (!documentType) {
+      return res.status(400).json({
+        success: false,
+        message: 'Document type is required'
+      });
+    }
+
     const policy = await Policy.findOne({ where: { id: policyId } });
     if (!policy) {
       return res.status(404).json({
@@ -254,17 +324,45 @@ router.post('/api/policy/:id/document', async (req, res) => {
       });
     }
 
-    // Create document
+    const cloudinaryConfig = cloudinary.config();
+    if (!cloudinaryConfig.cloud_name || !cloudinaryConfig.api_key || !cloudinaryConfig.api_secret) {
+      return res.status(500).json({
+        success: false,
+        message: 'Cloudinary configuration is missing'
+      });
+    }
+
+    const uploadResult = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'auto',
+          folder: 'policy_documents',
+          public_id: `policy_${policyId}_${Date.now()}`
+        },
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        }
+      );
+
+      streamifier.createReadStream(req.file.buffer).pipe(uploadStream);
+    });
+
     const document = await Document.create({
       policyId,
       documentType,
-      fileName,
-      fileSize
+      fileName: req.file.originalname,
+      fileSize: `${(req.file.size / 1024).toFixed(2)} KB`,
+      filePath: uploadResult.secure_url,
+      cloudinaryPublicId: uploadResult.public_id
     });
 
     res.status(201).json({
       success: true,
-      message: 'Document added successfully',
+      message: 'Document uploaded successfully',
       data: document
     });
   } catch (error) {
@@ -364,6 +462,14 @@ router.delete('/api/document/:id', async (req, res) => {
         success: false,
         message: 'Document not found'
       });
+    }
+
+    if (document.cloudinaryPublicId && process.env.CLOUDINARY_URL) {
+      try {
+        await cloudinary.uploader.destroy(document.cloudinaryPublicId, { resource_type: 'auto' });
+      } catch (cloudError) {
+        console.warn('Cloudinary document delete failed:', cloudError.message || cloudError);
+      }
     }
 
     await document.destroy();
