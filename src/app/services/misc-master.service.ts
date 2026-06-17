@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class MiscMasterService {
-  private apiUrl = 'http://localhost:3000/api/misc-master';
+  private apiUrl = 'https://policy-api.alluresofttech.com/api/misc-master';
 
   constructor(private http: HttpClient) {}
 
