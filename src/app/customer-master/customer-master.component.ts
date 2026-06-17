@@ -29,7 +29,7 @@ export class CustomerMasterComponent implements OnInit {
       name: ['', [Validators.required, Validators.minLength(3)]],
       mobileNumber: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
       alternativeMobileNumber: ['', [Validators.pattern(/^\d{10}$/)]],
-      emailId: ['', [Validators.required, Validators.email]],
+      emailId: ['', [ Validators.email]],
       dateOfBirth: ['', []],
       remark: ['', []]
     });
@@ -133,9 +133,9 @@ export class CustomerMasterComponent implements OnInit {
 
   getErrorMessage(field: string): string {
     const control = this.form.get(field);
-    if (control?.hasError('required')) {
-      return `${this.getLabelName(field)} is required`;
-    }
+    // if (control?.hasError('required')) {
+    //   return `${this.getLabelName(field)} is required`;
+    // }
     if (control?.hasError('minlength')) {
       const minLength = control.getError('minlength').requiredLength;
       return `${this.getLabelName(field)} must be at least ${minLength} characters`;

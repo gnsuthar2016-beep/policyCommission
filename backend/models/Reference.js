@@ -23,10 +23,14 @@ const Reference = sequelize.define('Reference', {
   },
   emailId: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     unique: true,
     validate: {
-      isEmail: true
+      isEmail: function(value) {
+        if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          throw new Error('Email format is invalid');
+        }
+      }
     }
   },
   dateOfBirth: {

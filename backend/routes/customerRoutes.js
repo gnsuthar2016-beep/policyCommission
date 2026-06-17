@@ -7,30 +7,45 @@ router.post('/api/customer', async (req, res) => {
   try {
     const { name, mobileNumber, alternativeMobileNumber, emailId, dateOfBirth, remark } = req.body;
 
-    if (!name || !mobileNumber || !emailId) {
+    // Validate required fields: name and mobileNumber
+    if (!name || !mobileNumber) {
       return res.status(400).json({
         success: false,
-        message: 'Name, Mobile Number, and Email ID are required'
+        message: 'Name and Mobile Number are required'
       });
     }
 
-    // Check if customer already exists
-    const existingCustomer = await Customer.findOne({
-      where: { emailId: emailId }
+    // Check if customer already exists by mobile number
+    const existingCustomerByMobile = await Customer.findOne({
+      where: { mobileNumber: mobileNumber }
     });
 
-    if (existingCustomer) {
+    if (existingCustomerByMobile) {
       return res.status(400).json({
         success: false,
-        message: 'Customer with this email already exists'
+        message: 'Customer with this mobile number already exists'
       });
+    }
+
+    // Check if customer already exists by email (only if email is provided)
+    if (emailId && emailId.trim() !== '') {
+      const existingCustomerByEmail = await Customer.findOne({
+        where: { emailId: emailId.trim() }
+      });
+
+      if (existingCustomerByEmail) {
+        return res.status(400).json({
+          success: false,
+          message: 'Customer with this email already exists'
+        });
+      }
     }
 
     const customer = await Customer.create({
       name: name,
       mobileNumber: mobileNumber,
       alternativeMobileNumber: alternativeMobileNumber || null,
-      emailId: emailId,
+      emailId: (emailId && emailId.trim() !== '') ? emailId.trim() : null,
       dateOfBirth: dateOfBirth || null,
       remark: remark || null
     });
@@ -133,10 +148,11 @@ router.put('/api/customer/:id', async (req, res) => {
     const id = req.params.id;
     const { name, mobileNumber, alternativeMobileNumber, emailId, dateOfBirth, remark } = req.body;
 
-    if (!name || !mobileNumber || !emailId) {
+    // Validate required fields: name and mobileNumber
+    if (!name || !mobileNumber) {
       return res.status(400).json({
         success: false,
-        message: 'Name, Mobile Number, and Email ID are required'
+        message: 'Name and Mobile Number are required'
       });
     }
 
@@ -149,24 +165,27 @@ router.put('/api/customer/:id', async (req, res) => {
       });
     }
 
-    // Check if email is already taken by another customer
-    if (customer.emailId !== emailId) {
-      const existingCustomer = await Customer.findOne({
-        where: { emailId: emailId }
-      });
-
-      if (existingCustomer) {
-        return res.status(400).json({
-          success: false,
-          message: 'This email already exists'
+    // Check if email is already taken by another customer (only if email is provided and different from current)
+    if (emailId && emailId.trim() !== '') {
+      const trimmedEmail = emailId.trim();
+      if (customer.emailId !== trimmedEmail) {
+        const existingCustomer = await Customer.findOne({
+          where: { emailId: trimmedEmail }
         });
+
+        if (existingCustomer) {
+          return res.status(400).json({
+            success: false,
+            message: 'This email already exists'
+          });
+        }
       }
     }
 
     customer.name = name;
     customer.mobileNumber = mobileNumber;
     customer.alternativeMobileNumber = alternativeMobileNumber || null;
-    customer.emailId = emailId;
+    customer.emailId = (emailId && emailId.trim() !== '') ? emailId.trim() : null;
     customer.dateOfBirth = dateOfBirth || null;
     customer.remark = remark || null;
     await customer.save();

@@ -33,10 +33,6 @@ const Document = sequelize.define('Document', {
     type: DataTypes.STRING,
     allowNull: true
   },
-  cloudinaryPublicId: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
   uploadDate: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW

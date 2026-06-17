@@ -17,23 +17,6 @@
       <h2 class="section-title">Policy Purchase Details</h2>
 
       <div class="form-grid">
-        <!-- Customer Name -->
-        <div class="form-group">
-          <label for="customerName">Customer Name <span class="required">*</span></label>
-          <div class="customer-input-group">
-            <select id="customerName" formControlName="customerName" class="form-control" (change)="onCustomerChange($event)">
-              <option value="">-- Select Customer --</option>
-              <option *ngFor="let customer of customerNames" [value]="customer">{{ customer }}</option>
-            </select>
-            <button type="button" class="btn-add-customer" (click)="goToAddCustomer()" title="Add New Customer">
-              + Add New
-            </button>
-          </div>
-          <div class="error-message" *ngIf="form.get('customerName')?.touched && form.get('customerName')?.invalid">
-            {{ getErrorMessage('customerName') }}
-          </div>
-        </div>
-
         <!-- Policy Type -->
         <div class="form-group">
           <label for="policyType">Policy Type <span class="required">*</span></label>
@@ -46,17 +29,41 @@
           </div>
         </div>
 
-        <!-- Renewal -->
+
+        <!-- Customer Name -->
         <div class="form-group">
-          <label for="renewal">Renewal <span class="required">*</span></label>
-          <select id="renewal" formControlName="renewal" class="form-control">
-            <option value="">-- Select Renewal --</option>
-            <option *ngFor="let option of renewalOptions" [value]="option">{{ option }}</option>
-          </select>
-          <div class="error-message" *ngIf="form.get('renewal')?.touched && form.get('renewal')?.invalid">
-            {{ getErrorMessage('renewal') }}
+          <label for="customerName">Customer Name <span class="required">*</span></label>
+          <div class="customer-input-group autocomplete-container">
+            <input 
+              type="text" 
+              id="customerName" 
+              formControlName="customerName" 
+              class="form-control autocomplete-input"
+              placeholder="Type customer name..."
+              (input)="onCustomerNameInput($event)"
+              (focus)="showCustomerDropdown = filteredCustomerNames.length > 0"
+              (blur)="onCustomerBlur()"
+              autocomplete="off">
+            <button type="button" class="btn-add-customer" (click)="goToAddCustomer()" title="Add New Customer">
+              + 
+            </button>
+            
+            <!-- Autocomplete dropdown -->
+            <div class="autocomplete-dropdown" *ngIf="showCustomerDropdown && filteredCustomerNames.length > 0">
+              <div 
+                class="autocomplete-option" 
+                *ngFor="let customer of filteredCustomerNames"
+                (mousedown)="selectCustomer(customer)">
+                {{ customer }}
+              </div>
+            </div>
+          </div>
+          <div class="error-message" *ngIf="form.get('customerName')?.touched && form.get('customerName')?.invalid">
+            {{ getErrorMessage('customerName') }}
           </div>
         </div>
+
+        
 
         <!-- Insured Name -->
         <!-- <div class="form-group">
@@ -73,20 +80,15 @@
           </div>
         </div>
 
-        <!-- Reference Name -->
+        <!-- Insurance Branch -->
         <div class="form-group">
-          <label for="referenceName">Reference Name <span class="required">*</span></label>
-          <div class="reference-input-group">
-            <select id="referenceName" formControlName="referenceName" class="form-control">
-              <option value="">-- Select Reference Name --</option>
-              <option *ngFor="let ref of referenceNames" [value]="ref">{{ ref }}</option>
-            </select>
-            <button type="button" class="btn-add-reference" (click)="goToAddReference()" title="Add New Reference">
-              + Add New
-            </button>
-          </div>
-          <div class="error-message" *ngIf="form.get('referenceName')?.touched && form.get('referenceName')?.invalid">
-            {{ getErrorMessage('referenceName') }}
+          <label for="insuranceType">Insurance Branch <span class="required">*</span></label>
+          <select id="insuranceType" formControlName="insuranceType" class="form-control">
+            <option value="">-- Select Insurance Branch --</option>
+            <option *ngFor="let type of insuranceTypes" [value]="type">{{ type }}</option>
+          </select>
+          <div class="error-message" *ngIf="form.get('insuranceType')?.touched && form.get('insuranceType')?.invalid">
+            {{ getErrorMessage('insuranceType') }}
           </div>
         </div>
 
@@ -102,17 +104,42 @@
           </div>
         </div>
 
-        <!-- Insurance Type -->
+        <!-- Reference Name -->
         <div class="form-group">
-          <label for="insuranceType">Insurance Type <span class="required">*</span></label>
-          <select id="insuranceType" formControlName="insuranceType" class="form-control">
-            <option value="">-- Select Insurance Type --</option>
-            <option *ngFor="let type of insuranceTypes" [value]="type">{{ type }}</option>
-          </select>
-          <div class="error-message" *ngIf="form.get('insuranceType')?.touched && form.get('insuranceType')?.invalid">
-            {{ getErrorMessage('insuranceType') }}
+          <label for="referenceName">Reference Name <span class="required">*</span></label>
+          <div class="reference-input-group autocomplete-container">
+            <input 
+              type="text" 
+              id="referenceName" 
+              formControlName="referenceName" 
+              class="form-control autocomplete-input"
+              placeholder="Type reference name..."
+              (input)="onReferenceNameInput($event)"
+              (focus)="showReferenceDropdown = filteredReferenceNames.length > 0"
+              (blur)="onReferenceBlur()"
+              autocomplete="off">
+            <button type="button" class="btn-add-reference" (click)="goToAddReference()" title="Add New Reference">
+              + 
+            </button>
+            
+            <!-- Autocomplete dropdown -->
+            <div class="autocomplete-dropdown" *ngIf="showReferenceDropdown && filteredReferenceNames.length > 0">
+              <div 
+                class="autocomplete-option" 
+                *ngFor="let ref of filteredReferenceNames"
+                (mousedown)="selectReference(ref)">
+                {{ ref }}
+              </div>
+            </div>
+          </div>
+          <div class="error-message" *ngIf="form.get('referenceName')?.touched && form.get('referenceName')?.invalid">
+            {{ getErrorMessage('referenceName') }}
           </div>
         </div>
+
+        
+
+        
 
         <!-- Product Name -->
         <div class="form-group">
@@ -251,12 +278,20 @@
       <h2 class="section-title">Broker Details</h2>
 
       <div class="form-grid">
-        <!-- Ref. Brokerage On (Auto-populated from Net Premium) -->
+        <!-- Ref. Brokerage On with Premium Source Dropdown -->
         <div class="form-group">
           <label for="refBrokerageOn">Ref. Brokerage On <span class="required">*</span></label>
-          <input type="text" id="refBrokerageOn" [value]="getRefBrokerageOn() | number:'1.2-2'" class="form-control" 
-                 readonly disabled placeholder="Auto-populated from Net Premium" style="background-color: #f5f5f5; cursor: not-allowed;">
-          <small style="color: #666;">Auto-populated from Net Premium value</small>
+          <div class="input-group" style="display: flex; gap: 8px; align-items: flex-start;">
+            <!-- Premium Source Dropdown -->
+            <select formControlName="premiumSource" class="form-control" style="flex: 0 0 150px;">
+              <option value="OD Premium">OD Premium</option>
+              <option value="Net Premium">Net Premium</option>
+            </select>
+            <!-- Ref. Brokerage On Textbox -->
+            <input type="text" id="refBrokerageOn" [value]="getRefBrokerageOn() | number:'1.2-2'" class="form-control" 
+                   readonly disabled placeholder="Auto-populated" style="background-color: #f5f5f5; cursor: not-allowed; flex: 1;">
+          </div>
+          <small style="color: #666;">Select premium type above to populate value</small>
         </div>
 
         <!-- Ref Brokerage % with % symbol -->
@@ -297,6 +332,16 @@
           </div>
         </div>
 
+        <!-- Registration Number -->
+        <div class="form-group">
+          <label for="registrationNumber">Registration Number <span class="required">*</span></label>
+          <input type="text" id="registrationNumber" formControlName="registrationNumber" class="form-control" 
+                 placeholder="Enter registration number">
+          <div class="error-message" *ngIf="form.get('registrationNumber')?.touched && form.get('registrationNumber')?.invalid">
+            {{ getErrorMessage('registrationNumber') }}
+          </div>
+        </div>
+
         <!-- Make -->
         <div class="form-group">
           <label for="make">Make <span class="required">*</span></label>
@@ -321,15 +366,7 @@
           </div>
         </div>
 
-        <!-- Registration Number -->
-        <div class="form-group">
-          <label for="registrationNumber">Registration Number <span class="required">*</span></label>
-          <input type="text" id="registrationNumber" formControlName="registrationNumber" class="form-control" 
-                 placeholder="Enter registration number">
-          <div class="error-message" *ngIf="form.get('registrationNumber')?.touched && form.get('registrationNumber')?.invalid">
-            {{ getErrorMessage('registrationNumber') }}
-          </div>
-        </div>
+        
       </div>
     </div>
 
@@ -362,9 +399,6 @@
             <button type="button" class="btn btn-success" (click)="addDocument(fileInput)">
               Upload Document
             </button>
-          </div>
-          <div class="error-message" *ngIf="documentUploadError">
-            {{ documentUploadError }}
           </div>
         </div>
 
@@ -461,7 +495,7 @@
 
           <!-- Email ID -->
           <div class="form-group">
-            <label for="modalEmail">Email ID <span class="required">*</span></label>
+            <label for="modalEmail">Email ID </label>
             <input 
               id="modalEmail" 
               type="email" 
@@ -574,7 +608,7 @@
 
           <!-- Email ID -->
           <div class="form-group">
-            <label for="modalRefEmail">Email ID <span class="required">*</span></label>
+            <label for="modalRefEmail">Email ID </label>
             <input 
               id="modalRefEmail" 
               type="email" 

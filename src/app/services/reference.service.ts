@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class ReferenceService {
-  private apiUrl = 'https://policy-api.alluresofttech.com/api/reference';
+  private apiUrl = 'http://localhost:3000/api/reference';
 
   constructor(private http: HttpClient) {}
 

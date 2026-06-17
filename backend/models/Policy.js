@@ -23,10 +23,6 @@ const Policy = sequelize.define('Policy', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  renewal: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
   policyNumber: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -93,6 +89,14 @@ const Policy = sequelize.define('Policy', {
   refBrokerageOn: {
     type: DataTypes.STRING,
     allowNull: false
+  },
+  premiumSource: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'Net Premium',
+    validate: {
+      isIn: [['OD Premium', 'Net Premium']]
+    }
   },
   refBrokeragePercent: {
     type: DataTypes.DECIMAL(5, 2),

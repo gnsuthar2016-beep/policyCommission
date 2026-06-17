@@ -29,7 +29,7 @@ export class ReferenceMasterComponent implements OnInit {
       name: ['', [Validators.required, Validators.minLength(2)]],
       mobileNumber: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
       alternativeMobileNumber: ['', [Validators.pattern(/^\d{10}$/)]],
-      emailId: ['', [Validators.required, Validators.email]],
+      emailId: ['', [Validators.email]],
       dateOfBirth: ['', []],
       remark: ['', []]
     });

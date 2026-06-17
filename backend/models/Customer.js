@@ -22,8 +22,11 @@ const Customer = sequelize.define('Customer', {
   },
   emailId: {
     type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
+    allowNull: true,
+    unique: true,
+    where: {
+      emailId: { [require('sequelize').Op.ne]: null }
+    }
   },
   dateOfBirth: {
     type: DataTypes.DATE,

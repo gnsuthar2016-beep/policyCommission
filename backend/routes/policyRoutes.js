@@ -1,48 +1,9 @@
 const express = require('express');
-const multer = require('multer');
-const streamifier = require('streamifier');
-const { v2: cloudinary } = require('cloudinary');
 const router = express.Router();
 const { QueryTypes, Op } = require('sequelize');
 const Policy = require('../models/Policy');
 const Document = require('../models/Document');
 const sequelize = require('../config/database');
-
-const cloudinarySettings = {
-  secure: true,
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || null,
-  api_key: process.env.CLOUDINARY_API_KEY || null,
-  api_secret: process.env.CLOUDINARY_API_SECRET || null
-};
-
-if (process.env.CLOUDINARY_URL) {
-  cloudinary.config({ secure: true });
-} else if (cloudinarySettings.cloud_name && cloudinarySettings.api_key && cloudinarySettings.api_secret) {
-  cloudinary.config(cloudinarySettings);
-} else {
-  console.warn('⚠ Cloudinary is not configured. Set CLOUDINARY_URL or CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET in environment.');
-}
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 1 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowedMimeTypes = [
-      'application/pdf',
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-      'image/bmp',
-      'image/tiff'
-    ];
-    if (allowedMimeTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image and PDF files are allowed'));
-    }
-  }
-});
 
 // Helper function to sanitize policy data - removes N/A or null customer names
 const sanitizePolicyData = (policy) => {
@@ -90,7 +51,6 @@ router.post('/api/policy', async (req, res) => {
     const policy = await Policy.create({
       customerName: policyData.customerName.trim(),
       policyType: policyData.policyType,
-      renewal: policyData.renewal,
       insuredName: policyData.insuredName,
       policyNumber: policyData.policyNumber,
       referenceName: policyData.referenceName,
@@ -108,6 +68,7 @@ router.post('/api/policy', async (req, res) => {
       gstAmount: policyData.gstAmount || null,
       finalPremium: policyData.finalPremium,
       refBrokerageOn: policyData.refBrokerageOn,
+      premiumSource: policyData.premiumSource || 'Net Premium',
       refBrokeragePercent: policyData.refBrokeragePercent || null,
       refBrokerageAmount: policyData.refBrokerageAmount || null,
       totalIDV: policyData.totalIDV,
@@ -157,7 +118,7 @@ router.get('/api/policy/:id', async (req, res) => {
         {
           model: Document,
           as: 'documents',
-          attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate', 'filePath', 'cloudinaryPublicId']
+          attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate']
         }
       ]
     });
@@ -213,7 +174,7 @@ router.get('/api/policies', async (req, res) => {
         {
           model: Document,
           as: 'documents',
-          attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate', 'filePath', 'cloudinaryPublicId']
+          attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate']
         }
       ],
       order: [['createdAt', 'DESC']]
@@ -279,43 +240,12 @@ router.get('/api/policies/admin/all', async (req, res) => {
 });
 
 // Add Document to Policy
-router.post('/api/policy/:id/document', (req, res, next) => {
-  upload.single('document')(req, res, (err) => {
-    if (err) {
-      if (err instanceof multer.MulterError) {
-        return res.status(400).json({
-          success: false,
-          message: err.code === 'LIMIT_FILE_SIZE'
-            ? 'File size must be 1MB or less'
-            : err.message
-        });
-      }
-      return res.status(400).json({
-        success: false,
-        message: err.message || 'File upload failed'
-      });
-    }
-    next();
-  });
-}, async (req, res) => {
+router.post('/api/policy/:id/document', async (req, res) => {
   try {
     const policyId = req.params.id;
-    const { documentType } = req.body;
+    const { documentType, fileName, fileSize } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'Document file is required'
-      });
-    }
-
-    if (!documentType) {
-      return res.status(400).json({
-        success: false,
-        message: 'Document type is required'
-      });
-    }
-
+    // Check if policy exists
     const policy = await Policy.findOne({ where: { id: policyId } });
     if (!policy) {
       return res.status(404).json({
@@ -324,45 +254,17 @@ router.post('/api/policy/:id/document', (req, res, next) => {
       });
     }
 
-    const cloudinaryConfig = cloudinary.config();
-    if (!cloudinaryConfig.cloud_name || !cloudinaryConfig.api_key || !cloudinaryConfig.api_secret) {
-      return res.status(500).json({
-        success: false,
-        message: 'Cloudinary configuration is missing'
-      });
-    }
-
-    const uploadResult = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: 'auto',
-          folder: 'policy_documents',
-          public_id: `policy_${policyId}_${Date.now()}`
-        },
-        (error, result) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(result);
-          }
-        }
-      );
-
-      streamifier.createReadStream(req.file.buffer).pipe(uploadStream);
-    });
-
+    // Create document
     const document = await Document.create({
       policyId,
       documentType,
-      fileName: req.file.originalname,
-      fileSize: `${(req.file.size / 1024).toFixed(2)} KB`,
-      filePath: uploadResult.secure_url,
-      cloudinaryPublicId: uploadResult.public_id
+      fileName,
+      fileSize
     });
 
     res.status(201).json({
       success: true,
-      message: 'Document uploaded successfully',
+      message: 'Document added successfully',
       data: document
     });
   } catch (error) {
@@ -409,7 +311,6 @@ router.put('/api/policy/:id', async (req, res) => {
     await policy.update({
       customerName: policyData.customerName.trim(),
       policyType: policyData.policyType,
-      renewal: policyData.renewal,
       insuredName: policyData.insuredName,
       policyNumber: policyData.policyNumber,
       referenceName: policyData.referenceName,
@@ -427,6 +328,7 @@ router.put('/api/policy/:id', async (req, res) => {
       gstAmount: policyData.gstAmount || null,
       finalPremium: policyData.finalPremium,
       refBrokerageOn: policyData.refBrokerageOn,
+      premiumSource: policyData.premiumSource || 'Net Premium',
       refBrokeragePercent: policyData.refBrokeragePercent || null,
       refBrokerageAmount: policyData.refBrokerageAmount || null,
       totalIDV: policyData.totalIDV,
@@ -462,14 +364,6 @@ router.delete('/api/document/:id', async (req, res) => {
         success: false,
         message: 'Document not found'
       });
-    }
-
-    if (document.cloudinaryPublicId && process.env.CLOUDINARY_URL) {
-      try {
-        await cloudinary.uploader.destroy(document.cloudinaryPublicId, { resource_type: 'auto' });
-      } catch (cloudError) {
-        console.warn('Cloudinary document delete failed:', cloudError.message || cloudError);
-      }
     }
 
     await document.destroy();
@@ -895,7 +789,6 @@ router.post('/api/test/sample-policies', async (req, res) => {
       {
         customerName: 'Rajesh Kumar',
         policyType: 'Four Wheeler',
-        renewal: 'Yes',
         policyNumber: 'POL001',
         referenceName: 'John Broker',
         companyName: 'ICICI Lombard',
@@ -922,7 +815,6 @@ router.post('/api/test/sample-policies', async (req, res) => {
       {
         customerName: 'Priya Singh',
         policyType: 'Two Wheeler',
-        renewal: 'No',
         policyNumber: 'POL002',
         referenceName: 'Sarah Agent',
         companyName: 'Bajaj Allianz',
@@ -949,7 +841,6 @@ router.post('/api/test/sample-policies', async (req, res) => {
       {
         customerName: 'Amit Patel',
         policyType: 'Health',
-        renewal: 'Yes',
         policyNumber: 'POL003',
         referenceName: 'Mike Advisor',
         companyName: 'Apollo DKV',
@@ -990,6 +881,104 @@ router.post('/api/test/sample-policies', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error creating sample policies',
+      error: error.message
+    });
+  }
+});
+
+// Search Policies endpoint
+router.post('/api/policies/search', async (req, res) => {
+  try {
+    const { customerName, policyNumber, registrationNumber, mobileNumber } = req.body;
+
+    // Build search conditions
+    const searchConditions = [];
+
+    // Validate that at least one search parameter is provided
+    if (!customerName && !policyNumber && !registrationNumber && !mobileNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide at least one search criteria'
+      });
+    }
+
+    // Add conditions for each provided search parameter
+    if (customerName && customerName.trim() !== '') {
+      searchConditions.push({
+        customerName: {
+          [Op.iLike]: `%${customerName.trim()}%`
+        }
+      });
+    }
+
+    if (policyNumber && policyNumber.trim() !== '') {
+      searchConditions.push({
+        policyNumber: {
+          [Op.iLike]: `%${policyNumber.trim()}%`
+        }
+      });
+    }
+
+    if (registrationNumber && registrationNumber.trim() !== '') {
+      searchConditions.push({
+        registrationNumber: {
+          [Op.iLike]: `%${registrationNumber.trim()}%`
+        }
+      });
+    }
+
+    if (mobileNumber && mobileNumber.trim() !== '') {
+      searchConditions.push({
+        mobileNumber: {
+          [Op.iLike]: `%${mobileNumber.trim()}%`
+        }
+      });
+    }
+
+    // Combine all conditions with OR operator and ensure valid customer names
+    const whereClause = {
+      [Op.and]: [
+        {
+          [Op.or]: searchConditions
+        },
+        {
+          [Op.and]: [
+            sequelize.where(sequelize.col('customerName'), Op.ne, 'N/A'),
+            sequelize.where(sequelize.col('customerName'), Op.ne, null),
+            sequelize.where(
+              sequelize.fn('TRIM', sequelize.col('customerName')), 
+              Op.ne, 
+              ''
+            )
+          ]
+        }
+      ]
+    };
+
+    // Execute search query
+    const policies = await Policy.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Document,
+          as: 'documents',
+          attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Search completed successfully',
+      count: policies.length,
+      data: policies
+    });
+  } catch (error) {
+    console.error('Error searching policies:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error searching policies',
       error: error.message
     });
   }

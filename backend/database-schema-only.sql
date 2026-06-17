@@ -78,6 +78,7 @@ CREATE TABLE policies (
     "gstAmount" NUMERIC(10, 2),
     "finalPremium" NUMERIC(10, 2) NOT NULL,
     "refBrokerageOn" VARCHAR(255) NOT NULL,
+    "premiumSource" VARCHAR(50) DEFAULT 'Net Premium',
     "refBrokeragePercent" NUMERIC(5, 2),
     "refBrokerageAmount" NUMERIC(10, 2),
     "totalIDV" NUMERIC(10, 2) NOT NULL,

@@ -56,7 +56,7 @@ npm run dev
 npm start
 ```
 
-The server will run on `https://policy-api.alluresofttech.com`
+The server will run on `http://localhost:3000`
 
 ## Database Schema
 

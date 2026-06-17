@@ -51,13 +51,13 @@
 
       <!-- Email ID -->
       <div class="form-group">
-        <label for="emailId">Email ID <span class="required">*</span></label>
+        <label for="emailId">Email ID</label>
         <input 
           id="emailId" 
           type="email" 
           formControlName="emailId" 
           class="form-control"
-          placeholder="Enter email address"
+          placeholder="Enter email address (optional)"
           [class.is-invalid]="form.get('emailId')?.invalid && form.get('emailId')?.touched">
         <div class="error-message" *ngIf="form.get('emailId')?.invalid && form.get('emailId')?.touched">
           {{ getErrorMessage('emailId') }}

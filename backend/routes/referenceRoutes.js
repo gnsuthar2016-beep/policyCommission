@@ -22,13 +22,6 @@ router.post('/api/reference', async (req, res) => {
       });
     }
 
-    if (!emailId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email ID is required'
-      });
-    }
-
     // Validate mobile number format (10 digits)
     if (!/^\d{10}$/.test(mobileNumber)) {
       return res.status(400).json({
@@ -37,12 +30,14 @@ router.post('/api/reference', async (req, res) => {
       });
     }
 
-    // Validate email format
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email ID format is invalid'
-      });
+    // Validate email format if provided
+    if (emailId && emailId.trim() !== '') {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailId.trim())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email ID format is invalid'
+        });
+      }
     }
 
     // Check if reference with same name already exists
@@ -69,23 +64,25 @@ router.post('/api/reference', async (req, res) => {
       });
     }
 
-    // Check if reference with same email already exists
-    const existingRefByEmail = await Reference.findOne({
-      where: { emailId: emailId }
-    });
-
-    if (existingRefByEmail) {
-      return res.status(400).json({
-        success: false,
-        message: 'Reference with this email already exists'
+    // Check if reference with same email already exists (only if email is provided)
+    if (emailId && emailId.trim() !== '') {
+      const existingRefByEmail = await Reference.findOne({
+        where: { emailId: emailId.trim() }
       });
+
+      if (existingRefByEmail) {
+        return res.status(400).json({
+          success: false,
+          message: 'Reference with this email already exists'
+        });
+      }
     }
 
     const reference = await Reference.create({
       name: name,
       mobileNumber: mobileNumber,
       alternativeMobileNumber: alternativeMobileNumber || null,
-      emailId: emailId,
+      emailId: (emailId && emailId.trim() !== '') ? emailId.trim() : null,
       dateOfBirth: dateOfBirth || null,
       remark: remark || null
     });
@@ -203,13 +200,6 @@ router.put('/api/reference/:id', async (req, res) => {
       });
     }
 
-    if (!emailId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email ID is required'
-      });
-    }
-
     // Validate mobile number format (10 digits)
     if (!/^\d{10}$/.test(mobileNumber)) {
       return res.status(400).json({
@@ -218,12 +208,14 @@ router.put('/api/reference/:id', async (req, res) => {
       });
     }
 
-    // Validate email format
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email ID format is invalid'
-      });
+    // Validate email format if provided
+    if (emailId && emailId.trim() !== '') {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailId.trim())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email ID format is invalid'
+        });
+      }
     }
 
     const reference = await Reference.findByPk(id);
@@ -263,24 +255,27 @@ router.put('/api/reference/:id', async (req, res) => {
       }
     }
 
-    // Check if email is already taken by another reference
-    if (reference.emailId !== emailId) {
-      const existingRefByEmail = await Reference.findOne({
-        where: { emailId: emailId }
-      });
-
-      if (existingRefByEmail) {
-        return res.status(400).json({
-          success: false,
-          message: 'Reference with this email already exists'
+    // Check if email is already taken by another reference (only if email is provided and different from current)
+    if (emailId && emailId.trim() !== '') {
+      const trimmedEmail = emailId.trim();
+      if (reference.emailId !== trimmedEmail) {
+        const existingRefByEmail = await Reference.findOne({
+          where: { emailId: trimmedEmail }
         });
+
+        if (existingRefByEmail) {
+          return res.status(400).json({
+            success: false,
+            message: 'Reference with this email already exists'
+          });
+        }
       }
     }
 
     reference.name = name;
     reference.mobileNumber = mobileNumber;
     reference.alternativeMobileNumber = alternativeMobileNumber || null;
-    reference.emailId = emailId;
+    reference.emailId = (emailId && emailId.trim() !== '') ? emailId.trim() : null;
     reference.dateOfBirth = dateOfBirth || null;
     reference.remark = remark || null;
     await reference.save();

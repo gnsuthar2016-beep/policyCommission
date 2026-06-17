@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
 import { PolicyService } from '../services/policy.service';
 import { MiscMasterService } from '../services/misc-master.service';
 import { CustomerService } from '../services/customer.service';
@@ -18,7 +17,6 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   addCustomerForm!: FormGroup;
   addReferenceForm!: FormGroup;
   documents: any[] = [];
-  documentUploadError = '';
   isEditMode = false;
   policyId: number | null = null;
   loading = false;
@@ -31,7 +29,6 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   // Dropdown options - will be populated from database
   customerNames: any[] = [];
   policyTypes: any[] = [];
-  renewalOptions: any[] = [];
   referenceNames: any[] = [];
   companyNames: any[] = [];
   insuranceTypes: any[] = [];
@@ -40,6 +37,12 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   vehicleModels: any[] = [];
   registrationNumbers: any[] = [];
   documentTypes: any[] = [];
+
+  // Filtered options for autocomplete
+  filteredCustomerNames: any[] = [];
+  filteredReferenceNames: any[] = [];
+  showCustomerDropdown = false;
+  showReferenceDropdown = false;
 
   constructor(
     private fb: FormBuilder,
@@ -120,14 +123,18 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
                      name !== undefined;
             })
             .sort();
+          // Initialize filtered list
+          this.filteredCustomerNames = this.customerNames;
           console.log('Loaded Customer Names:', this.customerNames);
         } else {
           this.customerNames = [];
+          this.filteredCustomerNames = [];
         }
       },
       error: (error) => {
         console.warn('Error loading customer names:', error);
         this.customerNames = [];
+        this.filteredCustomerNames = [];
       }
     });
   }
@@ -138,13 +145,17 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
         if (response.success && response.data && Array.isArray(response.data)) {
           // Extract just the names from references
           this.referenceNames = response.data.map((reference: any) => reference.name);
+          // Initialize filtered list
+          this.filteredReferenceNames = this.referenceNames;
         } else {
           this.referenceNames = [];
+          this.filteredReferenceNames = [];
         }
       },
       error: (error) => {
         console.warn('Error loading reference names:', error);
         this.referenceNames = [];
+        this.filteredReferenceNames = [];
       }
     });
   }
@@ -153,7 +164,6 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     // Mapping of dropdown property names to Misc Master type names
     const dropdownTypeMap = [
       { property: 'policyTypes', type: 'Policy Type' },
-      { property: 'renewalOptions', type: 'Renewal' },
       { property: 'companyNames', type: 'Company Name' },
       { property: 'insuranceTypes', type: 'Insurance Type' },
       { property: 'productNames', type: 'Product Name' },
@@ -191,6 +201,9 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
         if (response.success) {
           const policy = response.data;
           
+          console.log('Policy Data from API:', policy);
+          console.log('Premium Source from API:', policy.premiumSource);
+          
           // Extra validation: Check if customer name is N/A or invalid
           if (!policy.customerName || policy.customerName === 'N/A' || policy.customerName.trim() === '') {
             alert('⚠ ERROR: This policy has an invalid customer name in the database (N/A or empty).\n\nPlease contact the administrator to correct this data before editing.');
@@ -203,10 +216,17 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
             ...policy,
             periodFrom: this.formatDateForInput(policy.periodFrom),
             periodTo: this.formatDateForInput(policy.periodTo),
-            policyDate: this.formatDateForInput(policy.policyDate)
+            policyDate: this.formatDateForInput(policy.policyDate),
+            // Ensure premiumSource is set correctly
+            premiumSource: policy.premiumSource || 'Net Premium'
           };
           
+          console.log('Formatted Policy with premiumSource:', formattedPolicy.premiumSource);
+          
           this.form.patchValue(formattedPolicy);
+          
+          // Verify premiumSource was set in the form
+          console.log('Form premiumSource value after patchValue:', this.form.get('premiumSource')?.value);
           
           // Recalculate derived fields (GST and Final Premium)
           this.calculateGstAndFinalPremium();
@@ -219,8 +239,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
               documentType: doc.documentType,
               fileName: doc.fileName,
               fileSize: doc.fileSize,
-              uploadDate: doc.uploadDate,
-              filePath: doc.filePath
+              uploadDate: doc.uploadDate
             }));
           }
         } else {
@@ -248,7 +267,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       name: ['', [Validators.required, Validators.minLength(3)]],
       mobileNumber: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
       alternativeMobileNumber: ['', [Validators.pattern(/^\d{10}$/)]],
-      emailId: ['', [Validators.required, Validators.email]],
+      emailId: ['', [ Validators.email]],
       dateOfBirth: ['', []],
       remark: ['', []]
     });
@@ -259,7 +278,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       name: ['', [Validators.required, Validators.minLength(2)]],
       mobileNumber: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
       alternativeMobileNumber: ['', [Validators.pattern(/^\d{10}$/)]],
-      emailId: ['', [Validators.required, Validators.email]],
+      emailId: ['', [ Validators.email]],
       dateOfBirth: ['', []],
       remark: ['', []]
     });
@@ -269,8 +288,6 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     this.form = this.fb.group({
       customerName: ['', Validators.required],
       policyType: ['', Validators.required],
-      renewal: ['', Validators.required],
-      //insuredName: ['', [Validators.required, Validators.minLength(3)]],
       policyNumber: ['', [Validators.required, Validators.minLength(5)]],
       referenceName: ['', Validators.required],
       companyName: ['', Validators.required],
@@ -286,6 +303,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       gstPercent: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       gstAmount: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       finalPremium: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      premiumSource: ['Net Premium', Validators.required],
       refBrokerageOn: ['', [Validators.required,Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       refBrokeragePercent: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       refBrokerageAmount: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
@@ -302,6 +320,79 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     this.form.get('customerName')?.setValue(selectedValue);
   }
 
+  // Filter customer names for autocomplete
+  filterCustomerNames(searchText: string): void {
+    const trimmedSearch = searchText.trim().toLowerCase();
+    
+    if (trimmedSearch === '') {
+      this.filteredCustomerNames = this.customerNames;
+    } else {
+      this.filteredCustomerNames = this.customerNames.filter(name =>
+        name.toLowerCase().includes(trimmedSearch)
+      );
+    }
+    
+    this.showCustomerDropdown = trimmedSearch !== '' && this.filteredCustomerNames.length > 0;
+  }
+
+  // Handle customer name input
+  onCustomerNameInput(event: any): void {
+    const inputValue = event.target.value;
+    this.form.get('customerName')?.setValue(inputValue, { emitEvent: false });
+    this.filterCustomerNames(inputValue);
+  }
+
+  // Select customer from filtered list
+  selectCustomer(customerName: string): void {
+    this.form.get('customerName')?.setValue(customerName);
+    this.showCustomerDropdown = false;
+    this.filteredCustomerNames = [];
+  }
+
+  // Filter reference names for autocomplete
+  filterReferenceNames(searchText: string): void {
+    const trimmedSearch = searchText.trim().toLowerCase();
+    
+    if (trimmedSearch === '') {
+      this.filteredReferenceNames = this.referenceNames;
+    } else {
+      this.filteredReferenceNames = this.referenceNames.filter(name =>
+        name.toLowerCase().includes(trimmedSearch)
+      );
+    }
+    
+    this.showReferenceDropdown = trimmedSearch !== '' && this.filteredReferenceNames.length > 0;
+  }
+
+  // Handle reference name input
+  onReferenceNameInput(event: any): void {
+    const inputValue = event.target.value;
+    this.form.get('referenceName')?.setValue(inputValue, { emitEvent: false });
+    this.filterReferenceNames(inputValue);
+  }
+
+  // Select reference from filtered list
+  selectReference(referenceName: string): void {
+    this.form.get('referenceName')?.setValue(referenceName);
+    this.showReferenceDropdown = false;
+    this.filteredReferenceNames = [];
+  }
+
+  // Close customer dropdown with delay
+  onCustomerBlur(): void {
+    setTimeout(() => {
+      this.showCustomerDropdown = false;
+    }, 150);
+  }
+
+  // Close reference dropdown with delay
+  onReferenceBlur(): void {
+    setTimeout(() => {
+      this.showReferenceDropdown = false;
+    }, 150);
+  }
+
+  // Close dropdowns when clicking outside
   submit(): void {
     if (this.form.valid) {
       // Prepare policy data with documents
@@ -340,13 +431,21 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
         ...formData,
         // Ensure customerName is properly set to the selected value
         customerName: formData.customerName.trim(),
+        // Ensure premiumSource is included
+        premiumSource: formData.premiumSource || 'Net Premium',
         // Ensure dates are in ISO string format
         periodFrom: formatDateToISO(formData.periodFrom),
         periodTo: formatDateToISO(formData.periodTo),
-        policyDate: formatDateToISO(formData.policyDate)
+        policyDate: formatDateToISO(formData.policyDate),
+        documents: this.documents.map(doc => ({
+          documentType: doc.documentType,
+          fileName: doc.fileName,
+          fileSize: doc.fileSize
+        }))
       };
       
       console.log('Complete Payload Being Sent to API:', policyPayload);
+      console.log('premiumSource in Payload:', policyPayload.premiumSource);
 
       // Call API to save or update policy based on mode
       const apiCall = this.isEditMode && this.policyId
@@ -354,17 +453,13 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
         : this.policyService.savePolicy(policyPayload);
 
       apiCall.subscribe({
-        next: async (response) => {
+        next: (response) => {
           if (response.success) {
             const policyId = response.policyId;
             const mode = this.isEditMode ? 'updated' : 'created';
-            
-            if (!this.isEditMode && this.documents.some(doc => !!doc.file && !doc.filePath)) {
-              await this.uploadPendingDocuments(policyId);
-            }
-
             alert(`Policy Details ${mode} Successfully!\nPolicy ID: ${policyId}`);
             console.log('Policy saved:', response);
+            // Redirect to policy list
             this.router.navigate(['/policies']);
           } else {
             alert('Error saving policy: ' + response.message);
@@ -477,101 +572,29 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   }
 
   addDocument(fileInput: HTMLInputElement): void {
-    this.documentUploadError = '';
-
     if (this.documentForm.invalid || !fileInput.files?.length) {
       this.documentForm.markAllAsTouched();
-      this.documentUploadError = 'Please select a document and type before uploading.';
       return;
     }
 
     const file = fileInput.files[0];
     const documentType = this.documentForm.get('documentType')?.value;
 
-    if (!file) {
-      this.documentUploadError = 'Please select a valid file.';
-      return;
-    }
-
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff'];
-    if (!allowedTypes.includes(file.type)) {
-      this.documentUploadError = 'Only image and PDF files are allowed.';
-      return;
-    }
-
-    if (file.size > 1 * 1024 * 1024) {
-      this.documentUploadError = 'Maximum file size is 1MB.';
-      return;
-    }
-
-    const documentEntry: any = {
+    const documentEntry = {
       id: this.documents.length + 1,
-      documentType,
+      documentType: documentType,
       fileName: file.name,
       fileSize: (file.size / 1024).toFixed(2) + ' KB',
-      uploadDate: new Date().toLocaleString()
+      uploadDate: new Date().toLocaleString(),
+      file: file
     };
 
-    if (this.isEditMode && this.policyId) {
-      const formData = new FormData();
-      formData.append('documentType', documentType);
-      formData.append('document', file);
-
-      this.policyService.addDocumentToPolicy(this.policyId, formData).subscribe({
-        next: (response) => {
-          if (response.success) {
-            const savedDoc = response.data;
-            this.documents.push({
-              id: savedDoc.id,
-              documentType: savedDoc.documentType,
-              fileName: savedDoc.fileName,
-              fileSize: savedDoc.fileSize,
-              uploadDate: savedDoc.uploadDate,
-              filePath: savedDoc.filePath
-            });
-            this.documentForm.reset();
-            fileInput.value = '';
-          } else {
-            this.documentUploadError = response.message || 'Unable to upload document.';
-          }
-        },
-        error: (error) => {
-          this.documentUploadError = error.error?.message || 'Unable to upload document.';
-          console.error('Error uploading document:', error);
-        }
-      });
-      return;
-    }
-
-    documentEntry.file = file;
     this.documents.push(documentEntry);
     this.documentForm.reset();
     fileInput.value = '';
   }
 
   removeDocument(id: number): void {
-    const document = this.documents.find(doc => doc.id === id);
-    if (!document) {
-      return;
-    }
-
-    if (document.filePath && document.id && !document.file) {
-      this.policyService.deleteDocument(document.id).subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.documents = this.documents.filter(doc => doc.id !== id);
-          } else {
-            alert('Unable to delete document: ' + response.message);
-          }
-        },
-        error: (error) => {
-          console.error('Error deleting document:', error);
-          alert('Error deleting document. Please try again.');
-        }
-      });
-      return;
-    }
-
     this.documents = this.documents.filter(doc => doc.id !== id);
   }
 
@@ -581,17 +604,22 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
    * Otherwise, it's from the database and needs to be fetched from server
    */
   viewDocument(document: any): void {
-    if (document.filePath) {
-      window.open(document.filePath, '_blank');
-      return;
-    }
+    console.log('View Document called:', document);
+    console.log('Has file property:', !!document.file);
 
+    // If document has a file object (newly uploaded), download it directly
     if (document.file) {
+      console.log('Downloading file:', document.fileName);
       this.downloadFile(document.file, document.fileName);
-      return;
+    } else {
+      // If document is from database, we would need to fetch it from server
+      // For now, show a message that it needs to be downloaded from server
+      alert(`Document: ${document.fileName}\nType: ${document.documentType}\nSize: ${document.fileSize}\n\nNote: This document needs to be downloaded from the server.`);
+      // In a real scenario, you would call a service to download from the server:
+      // this.policyService.downloadDocument(document.id).subscribe(blob => {
+      //   this.downloadFile(blob, document.fileName);
+      // });
     }
-
-    alert(`Document: ${document.fileName}\nType: ${document.documentType}\nSize: ${document.fileSize}\n\nNo preview or download URL is available.`);
   }
 
   /**
@@ -685,7 +713,6 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     const labels: { [key: string]: string } = {
       customerName: 'Customer Name',
       policyType: 'Policy Type',
-      renewal: 'Renewal',
       policyNumber: 'Policy Number',
       referenceName: 'Reference Name',
       companyName: 'Company Name',
@@ -754,28 +781,6 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       remark: 'Remark'
     };
     return labels[field] || field;
-  }
-
-  private async uploadPendingDocuments(policyId: number): Promise<void> {
-    for (const document of this.documents.filter(doc => doc.file && !doc.filePath)) {
-      const formData = new FormData();
-      formData.append('documentType', document.documentType);
-      formData.append('document', document.file);
-
-      try {
-        const response: any = await firstValueFrom(this.policyService.addDocumentToPolicy(policyId, formData));
-        if (response.success) {
-          document.id = response.data.id;
-          document.filePath = response.data.filePath;
-          delete document.file;
-        } else {
-          throw new Error(response.message || 'Upload failed');
-        }
-      } catch (error) {
-        console.error('Error uploading pending document:', error);
-        alert(`Failed to upload document ${document.fileName}: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
   }
 
   get documentTypeControl() {
@@ -887,29 +892,32 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   }
 
   getRefBrokerageOn(): number {
-    return this.form.get('netPremium')?.value || 0;
+    const premiumSource = this.form.get('premiumSource')?.value || 'Net Premium';
+    
+    if (premiumSource === 'OD Premium') {
+      return this.form.get('basicODPremium')?.value || 0;
+    } else {
+      return this.form.get('netPremium')?.value || 0;
+    }
   }
 
   /**
    * Calculate and update Ref. Brokerage Amount
-   * Formula: Ref. Brokerage Amount = Ref. Brokerage On (Net Premium) × Ref Brokerage% / 100
+   * Formula: Ref. Brokerage Amount = Ref. Brokerage On (Selected Premium) × Ref Brokerage% / 100
    */
   calculateRefBrokerageAmount(): void {
-    const netPremium = this.form.get('netPremium')?.value || 0;
+    const refBrokerageOn = this.getRefBrokerageOn();
     const refBrokeragePercent = this.form.get('refBrokeragePercent')?.value || 0;
 
     // Calculate Ref. Brokerage Amount
-    const refBrokerageAmount = (parseFloat(netPremium) * parseFloat(refBrokeragePercent)) / 100;
+    const refBrokerageAmount = (parseFloat(refBrokerageOn.toString()) * parseFloat(refBrokeragePercent)) / 100;
 
-// Update the Ref. Brokerage Amount field (for storing if needed)
+    // Update both Ref. Brokerage On and Ref. Brokerage Amount fields
     this.form.patchValue(
-      { refBrokerageOn: parseFloat(netPremium).toFixed(2) },
-      { emitEvent: false }
-    );
-
-    // Update the Ref. Brokerage Amount field (for storing if needed)
-    this.form.patchValue(
-      { refBrokerageAmount: refBrokerageAmount.toFixed(2) },
+      { 
+        refBrokerageOn: parseFloat(refBrokerageOn.toString()).toFixed(2),
+        refBrokerageAmount: refBrokerageAmount.toFixed(2) 
+      },
       { emitEvent: false }
     );
   }
@@ -938,6 +946,11 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
 
     // Watch for changes in Ref Brokerage % to update Ref. Brokerage Amount
     this.form.get('refBrokeragePercent')?.valueChanges.subscribe(() => {
+      this.calculateRefBrokerageAmount();
+    });
+
+    // Watch for changes in Premium Source dropdown to update Ref. Brokerage On
+    this.form.get('premiumSource')?.valueChanges.subscribe(() => {
       this.calculateRefBrokerageAmount();
     });
   }

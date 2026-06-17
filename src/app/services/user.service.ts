@@ -11,7 +11,7 @@ export interface LogoutResponse {
   providedIn: 'root'
 })
 export class UserService {
-  private apiUrl = 'https://policy-api.alluresofttech.com/api';
+  private apiUrl = 'http://localhost:3000/api';
 
   constructor(private http: HttpClient) { }
 

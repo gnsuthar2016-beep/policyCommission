@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class PolicyService {
-  private apiUrl = 'https://policy-api.alluresofttech.com/api';
+  private apiUrl = 'http://localhost:3000/api';
 
   constructor(private http: HttpClient) { }
 
@@ -75,5 +75,10 @@ export class PolicyService {
   // Get renewal policies (expiring within 3 days)
   getRenewalPolicies(): Observable<any> {
     return this.http.get(`${this.apiUrl}/policies/renewal`);
+  }
+
+  // Search policies by customer name, policy number, registration number, or mobile number
+  searchPolicies(searchCriteria: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/policies/search`, searchCriteria);
   }
 }

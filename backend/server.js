@@ -11,6 +11,7 @@ const MiscMaster = require('./models/MiscMaster');
 const Customer = require('./models/Customer');
 const Reference = require('./models/Reference');
 const { fixCustomerNameColumn } = require('./migrations/fix-customer-name');
+const { addPremiumSourceColumn } = require('./migrations/add-premium-source');
 const policyRoutes = require('./routes/policyRoutes');
 const miscMasterRoutes = require('./routes/miscMasterRoutes');
 const customerRoutes = require('./routes/customerRoutes');
@@ -37,9 +38,10 @@ sequelize.authenticate()
   .then(async () => {
     console.log('✓ Database connection successful');
     
-    // Run migration to fix customerName column
+    // Run migrations
     console.log('Running database migrations...');
     await fixCustomerNameColumn();
+    await addPremiumSourceColumn();
     
     // Sync all models
     return sequelize.sync({ alter: true });

@@ -9,6 +9,81 @@
     </button>
   </div>
 
+  <!-- Search Section -->
+  <div class="search-section">
+    <div class="search-header">
+      <h3>🔍 Search Policies</h3>
+      <button class="btn btn-secondary" (click)="toggleSearchPanel()" *ngIf="showSearchPanel">
+        Hide Search
+      </button>
+      <button class="btn btn-secondary" (click)="toggleSearchPanel()" *ngIf="!showSearchPanel">
+        Show Search
+      </button>
+    </div>
+
+    <div class="search-form" *ngIf="showSearchPanel">
+      <div class="search-row">
+        <div class="search-field">
+          <label for="customerName">Customer Name</label>
+          <input 
+            type="text" 
+            id="customerName" 
+            [(ngModel)]="searchForm.customerName" 
+            placeholder="Enter customer name"
+            class="search-input"
+          />
+        </div>
+
+        <div class="search-field">
+          <label for="policyNumber">Policy Number</label>
+          <input 
+            type="text" 
+            id="policyNumber" 
+            [(ngModel)]="searchForm.policyNumber" 
+            placeholder="Enter policy number"
+            class="search-input"
+          />
+        </div>
+
+        <div class="search-field">
+          <label for="registrationNumber">Registration Number</label>
+          <input 
+            type="text" 
+            id="registrationNumber" 
+            [(ngModel)]="searchForm.registrationNumber" 
+            placeholder="Enter registration number"
+            class="search-input"
+          />
+        </div>
+
+        <div class="search-field">
+          <label for="mobileNumber">Mobile Number</label>
+          <input 
+            type="text" 
+            id="mobileNumber" 
+            [(ngModel)]="searchForm.mobileNumber" 
+            placeholder="Enter mobile number"
+            class="search-input"
+          />
+        </div>
+      </div>
+
+      <div class="search-actions">
+        <button class="btn btn-primary" (click)="performSearch()">
+          🔍 Search
+        </button>
+        <button class="btn btn-secondary" (click)="resetSearch()">
+          ↻ Reset
+        </button>
+      </div>
+
+      <div class="search-info" *ngIf="isSearchActive">
+        <p>Showing search results for: <strong>{{ getSearchSummary() }}</strong></p>
+        <button class="btn btn-link" (click)="resetSearch()">View all policies</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading State -->
   <div class="loading-state" *ngIf="loading">
     <p>Loading policies...</p>
@@ -23,7 +98,8 @@
   <!-- Empty State -->
   <div class="empty-state" *ngIf="policies.length === 0 && !loading && !error">
     <h2>No Policies Found</h2>
-    <p>You haven't added any policies yet.</p>
+    <p *ngIf="!isSearchActive">You haven't added any policies yet.</p>
+    <p *ngIf="isSearchActive">No policies match your search criteria. Try adjusting your search.</p>
     <button class="btn btn-primary" (click)="addNewPolicy()">Add Your First Policy</button>
   </div>
 
