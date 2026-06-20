@@ -93,6 +93,82 @@
         </div>
       </div>
 
+      <!-- Section: Document Upload -->
+      <div class="form-section">
+        <h3 class="section-title">Document Upload (Optional)</h3>
+
+        <div class="document-upload-group">
+          <div class="upload-form-grid">
+            <!-- Document Type -->
+            <div class="form-group">
+              <label for="customerDocumentType">Document Type</label>
+              <select id="customerDocumentType" [formControl]="documentTypeControl" class="form-control">
+                <option value="" disabled selected>Select Document Type</option>
+                <option *ngFor="let docType of documentTypes" [value]="docType">{{ docType }}</option>
+              </select>
+              <div class="error-message" *ngIf="documentForm.get('documentType')?.touched && documentForm.get('documentType')?.invalid">
+                Document Type is required
+              </div>
+            </div>
+
+            <!-- File Upload -->
+            <div class="form-group">
+              <label for="customerFileUpload">Select File (Max 1MB)</label>
+              <input type="file" id="customerFileUpload" #customerFileInput class="form-control file-input" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff">
+            </div>
+
+            <!-- Upload Button -->
+            <div class="form-group upload-button-group">
+              <button type="button" class="btn btn-success" (click)="addDocument(customerFileInput)">
+                Upload Document
+              </button>
+            </div>
+            <div class="error-message" *ngIf="documentUploadError">
+              {{ documentUploadError }}
+            </div>
+          </div>
+
+          <!-- Documents Table -->
+          <div class="documents-table-container" *ngIf="documents.length > 0">
+            <h4 class="table-title">Uploaded Documents</h4>
+            <table class="documents-table">
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  <th>Document Type</th>
+                  <th>File Name</th>
+                  <th>File Size</th>
+                  <th>Upload Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let doc of documents; let i = index">
+                  <td>{{ i + 1 }}</td>
+                  <td>{{ doc.documentType }}</td>
+                  <td>{{ doc.fileName }}</td>
+                  <td>{{ doc.fileSize }}</td>
+                  <td>{{ doc.uploadDate }}</td>
+                  <td>
+                    <button type="button" class="btn-icon btn-download" (click)="viewDocument(doc)" title="View Document">
+                      <i class="icon-download">⬇️</i>
+                    </button>
+                    <button type="button" class="btn-icon btn-delete" (click)="removeDocument(doc.id)" title="Delete">
+                      <i class="icon-delete">🗑️</i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div class="empty-state" *ngIf="documents.length === 0">
+            <p>No documents uploaded yet. Upload a document if needed.</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Buttons -->
       <div class="button-group">
         <button type="submit" class="btn btn-primary" [disabled]="loading">
@@ -105,10 +181,10 @@
   </div>
 
   <!-- List Section -->
-  <div class="list-wrapper">
+  <div class="list-wrapper" *ngIf="!isEditMode">
     <div class="list-header">
       <h3>Customer List</h3>
-      <button class="btn btn-add-new" (click)="reset()" *ngIf="isEditMode">
+      <button class="btn btn-add-new" (click)="reset()" *ngIf="!isEditMode">
         + Add New Customer
       </button>
     </div>

@@ -1,6 +1,40 @@
 const express = require('express');
+const multer = require('multer');
+const streamifier = require('streamifier');
+const { v2: cloudinary } = require('cloudinary');
 const router = express.Router();
 const Customer = require('../models/Customer');
+const CustomerDocument = require('../models/CustomerDocument');
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 1 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/bmp',
+      'image/tiff'
+    ];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image and PDF files are allowed'));
+    }
+  }
+});
+
+// Determine Cloudinary resource type from filename
+function getCloudinaryResourceType(fileName) {
+  if (!fileName || typeof fileName !== 'string') return 'image';
+  const ext = fileName.split('.').pop().toLowerCase();
+  const rawExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'];
+  if (rawExts.includes(ext)) return 'raw';
+  return 'image';
+}
 
 // Save Customer
 router.post('/api/customer', async (req, res) => {
@@ -69,6 +103,13 @@ router.post('/api/customer', async (req, res) => {
 router.get('/api/customer', async (req, res) => {
   try {
     const customers = await Customer.findAll({
+      include: [
+        {
+          model: CustomerDocument,
+          as: 'documents',
+          attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate', 'filePath', 'cloudinaryPublicId']
+        }
+      ],
       order: [['createdAt', 'DESC']]
     });
 
@@ -91,7 +132,15 @@ router.get('/api/customer/:id', async (req, res) => {
   try {
     const id = req.params.id;
 
-    const customer = await Customer.findByPk(id);
+    const customer = await Customer.findByPk(id, {
+      include: [
+        {
+          model: CustomerDocument,
+          as: 'documents',
+          attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate', 'filePath', 'cloudinaryPublicId']
+        }
+      ]
+    });
 
     if (!customer) {
       return res.status(404).json({
@@ -200,6 +249,141 @@ router.put('/api/customer/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating Customer: ' + error.message
+    });
+  }
+});
+
+// Add Document to Customer
+router.post('/api/customer/:id/document', (req, res, next) => {
+  upload.single('document')(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({
+          success: false,
+          message: err.code === 'LIMIT_FILE_SIZE'
+            ? 'File size must be 1MB or less'
+            : err.message
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'File upload failed'
+      });
+    }
+    next();
+  });
+}, async (req, res) => {
+  try {
+    const customerId = req.params.id;
+    const { documentType } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Document file is required'
+      });
+    }
+
+    if (!documentType) {
+      return res.status(400).json({
+        success: false,
+        message: 'Document type is required'
+      });
+    }
+
+    const customer = await Customer.findOne({ where: { id: customerId } });
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found'
+      });
+    }
+
+    const cloudinaryConfig = cloudinary.config();
+    if (!cloudinaryConfig.cloud_name || !cloudinaryConfig.api_key || !cloudinaryConfig.api_secret) {
+      return res.status(500).json({
+        success: false,
+        message: 'Cloudinary configuration is missing'
+      });
+    }
+
+    const uploadResult = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'auto',
+          folder: 'customer_documents',
+          public_id: `customer_${customerId}_${Date.now()}`
+        },
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        }
+      );
+
+      streamifier.createReadStream(req.file.buffer).pipe(uploadStream);
+    });
+
+    const document = await CustomerDocument.create({
+      customerId,
+      documentType,
+      fileName: req.file.originalname,
+      fileSize: `${(req.file.size / 1024).toFixed(2)} KB`,
+      filePath: uploadResult.secure_url,
+      cloudinaryPublicId: uploadResult.public_id
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Document uploaded successfully',
+      data: document
+    });
+  } catch (error) {
+    console.error('Error adding document:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error adding document',
+      error: error.message
+    });
+  }
+});
+
+// Delete Customer Document
+router.delete('/api/customer/document/:id', async (req, res) => {
+  try {
+    const documentId = req.params.id;
+
+    const document = await CustomerDocument.findOne({ where: { id: documentId } });
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+
+    if (document.cloudinaryPublicId && cloudinary.config().cloud_name) {
+      try {
+        const resourceType = getCloudinaryResourceType(document.fileName);
+        await cloudinary.uploader.destroy(document.cloudinaryPublicId, { resource_type: resourceType });
+      } catch (cloudError) {
+        console.warn('Cloudinary document delete failed:', cloudError.message || cloudError);
+      }
+    }
+
+    await document.destroy();
+
+    res.status(200).json({
+      success: true,
+      message: 'Document deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting document',
+      error: error.message
     });
   }
 });

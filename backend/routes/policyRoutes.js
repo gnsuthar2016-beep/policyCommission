@@ -15,6 +15,15 @@ const cloudinarySettings = {
   api_secret: process.env.CLOUDINARY_API_SECRET || null
 };
 
+// Determine Cloudinary resource type from filename
+function getCloudinaryResourceType(fileName) {
+  if (!fileName || typeof fileName !== 'string') return 'image';
+  const ext = fileName.split('.').pop().toLowerCase();
+  const rawExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'];
+  if (rawExts.includes(ext)) return 'raw';
+  return 'image';
+}
+
 if (process.env.CLOUDINARY_URL) {
   cloudinary.config({ secure: true });
 } else if (cloudinarySettings.cloud_name && cloudinarySettings.api_key && cloudinarySettings.api_secret) {
@@ -466,7 +475,8 @@ router.delete('/api/document/:id', async (req, res) => {
 
     if (document.cloudinaryPublicId && process.env.CLOUDINARY_URL) {
       try {
-        await cloudinary.uploader.destroy(document.cloudinaryPublicId, { resource_type: 'auto' });
+        const resourceType = getCloudinaryResourceType(document.fileName);
+        await cloudinary.uploader.destroy(document.cloudinaryPublicId, { resource_type: resourceType });
       } catch (cloudError) {
         console.warn('Cloudinary document delete failed:', cloudError.message || cloudError);
       }

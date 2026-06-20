@@ -7,6 +7,7 @@ const sequelize = require('./config/database');
 const User = require('./models/User');
 const Policy = require('./models/Policy');
 const Document = require('./models/Document');
+const CustomerDocument = require('./models/CustomerDocument');
 const MiscMaster = require('./models/MiscMaster');
 const Customer = require('./models/Customer');
 const Reference = require('./models/Reference');

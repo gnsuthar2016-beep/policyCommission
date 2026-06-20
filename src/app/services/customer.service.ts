@@ -19,22 +19,22 @@ export class CustomerService {
     dateOfBirth?: string;
     remark?: string;
   }): Observable<any> {
-    return this.http.post<any>(this.apiUrl, data);
+    return this.http.post<any>(`${this.apiUrl}/customer`, data);
   }
 
   // Get all Customers
   getAllCustomers(): Observable<any> {
-    return this.http.get<any>(this.apiUrl);
+    return this.http.get<any>(`${this.apiUrl}/customer`);
   }
 
   // Get Customer by ID
   getCustomerById(id: number): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/${id}`);
+    return this.http.get<any>(`${this.apiUrl}/customer/${id}`);
   }
 
   // Delete Customer by ID
   deleteCustomer(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/${id}`);
+    return this.http.delete<any>(`${this.apiUrl}/customer/${id}`);
   }
 
   // Update Customer by ID
@@ -46,6 +46,16 @@ export class CustomerService {
     dateOfBirth?: string;
     remark?: string;
   }): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/${id}`, data);
+    return this.http.put<any>(`${this.apiUrl}/customer/${id}`, data);
+  }
+
+  // Add document to customer
+  addDocumentToCustomer(customerId: number, documentData: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/customer/${customerId}/document`, documentData);
+  }
+
+  // Delete customer document
+  deleteCustomerDocument(documentId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/customer/document/${documentId}`);
   }
 }

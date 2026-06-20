@@ -2,7 +2,7 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
@@ -18,6 +18,8 @@ import { MiscMasterComponent } from './misc-master/misc-master.component';
 import { CustomerMasterComponent } from './customer-master/customer-master.component';
 import { ReferenceMasterComponent } from './reference-master/reference-master.component';
 import { ReducePipe } from './pipes/reduce.pipe';
+import { LoaderComponent } from './loader/loader.component';
+import { LoaderInterceptor } from './interceptors/loader.interceptor';
 
 @NgModule({
   declarations: [
@@ -34,6 +36,7 @@ import { ReducePipe } from './pipes/reduce.pipe';
     CustomerMasterComponent,
     ReferenceMasterComponent,
     ReducePipe
+    ,LoaderComponent
   ],
   imports: [
     BrowserAnimationsModule,
@@ -43,7 +46,9 @@ import { ReducePipe } from './pipes/reduce.pipe';
     HttpClientModule,
     AppRoutingModule
   ],
-  providers: [],
+  providers: [
+    { provide: HTTP_INTERCEPTORS, useClass: LoaderInterceptor, multi: true }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
