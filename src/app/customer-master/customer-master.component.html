@@ -1,4 +1,37 @@
 <div class="customer-master-container">
+  <!-- Import Customers via Excel -->
+  <div class="excel-import-card">
+    <div class="excel-import-header">
+      <div>
+        <h3>Import Customers from Excel</h3>
+        <p class="excel-import-subtitle">Upload an Excel file (.xlsx or .xls). Successful imports show a confirmation alert; any row errors appear below.</p>
+      </div>
+    </div>
+
+    <div class="excel-import-body">
+      <label class="excel-file-picker">
+        <span>Choose Excel file</span>
+        <input type="file" #customerExcelInput accept=".xlsx,.xls" />
+      </label>
+      <button class="btn btn-primary upload-import-button" (click)="importCustomers(customerExcelInput.files)">Upload and Import</button>
+    </div>
+
+    <div class="excel-import-footer" *ngIf="customerImportErrors.length > 0">
+      <div class="import-error-message">
+        <div class="error-header">
+          <span class="error-icon">⚠️</span>
+          <strong>Import Issues Found</strong>
+        </div>
+        <div class="error-list">
+          <div class="error-item" *ngFor="let error of customerImportErrors">
+            <span class="error-bullet">•</span>
+            <span class="error-text">{{ error }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Form Section -->
   <div class="form-wrapper">
     <h2>{{ isEditMode ? 'Edit Customer' : 'Add New Customer' }}</h2>
@@ -237,4 +270,6 @@
       </table>
     </div>
   </div>
+
+  <!-- Import via Excel -->
 </div>

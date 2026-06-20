@@ -11,6 +11,38 @@
     <p *ngIf="isEditMode">Update policy information and documents</p>
   </div>
 
+  <div class="excel-import-card">
+    <div class="excel-import-header">
+      <div>
+        <h3>Import Policies from Excel</h3>
+        <p class="excel-import-subtitle">Upload a policy Excel file (.xlsx or .xls) and process it immediately. Success is shown by alert; errors are listed below.</p>
+      </div>
+    </div>
+
+    <div class="excel-import-body">
+      <label class="excel-file-picker">
+        <span>Choose Excel file</span>
+        <input type="file" #policyExcelInput accept=".xlsx,.xls" />
+      </label>
+      <button type="button" class="btn btn-primary upload-import-button" (click)="importPolicies(policyExcelInput.files)">Upload and Import</button>
+    </div>
+
+    <div class="excel-import-footer" *ngIf="policyImportErrors.length > 0">
+      <div class="import-error-message">
+        <div class="error-header">
+          <span class="error-icon">⚠️</span>
+          <strong>Import Issues Found</strong>
+        </div>
+        <div class="error-list">
+          <div class="error-item" *ngFor="let error of policyImportErrors">
+            <span class="error-bullet">•</span>
+            <span class="error-text">{{ error }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <form [formGroup]="form" (ngSubmit)="submit()" class="policy-form" *ngIf="!loading">
     <!-- Section: Policy Purchase Details -->
     <div class="form-section">

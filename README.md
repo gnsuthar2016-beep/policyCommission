@@ -6,6 +6,15 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
 
+## Backend
+
+- Start server: `cd backend && npm run dev`
+
+- Importing Excel files:
+	- Customers: POST `/api/import/customers` form-data with `file` (xlsx)
+	- Policies: POST `/api/import/policies` form-data with `file` (xlsx)
+	- Responses include per-row `results` with `row`, `success`, and `errors` if any.
+
 ## Code scaffolding
 
 Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.

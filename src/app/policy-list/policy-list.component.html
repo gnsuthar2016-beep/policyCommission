@@ -143,9 +143,14 @@
           </td>
           <td>{{ formatDate(policy.createdAt) }}</td>
           <td>
-            <button class="btn-icon btn-view" (click)="viewPolicy(policy.id)" title="View/Edit Policy">
-              👁️ View
-            </button>
+            <div class="action-buttons">
+              <button class="btn-icon btn-view" (click)="viewPolicy(policy.id)" title="View/Edit Policy">
+                👁️ View
+              </button>
+              <button class="btn-icon btn-delete" (click)="deletePolicy(policy.id, policy.policyNumber)" title="Delete Policy">
+                🗑️ Delete
+              </button>
+            </div>
           </td>
         </tr>
       </tbody>

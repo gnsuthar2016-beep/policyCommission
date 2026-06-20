@@ -14,6 +14,7 @@ export class CustomerMasterComponent implements OnInit {
   documentForm!: FormGroup;
   documents: any[] = [];
   documentUploadError = '';
+  customerImportErrors: string[] = [];
   customers: any[] = [];
   loading = false;
   isEditMode = false;
@@ -31,6 +32,50 @@ export class CustomerMasterComponent implements OnInit {
     this.initializeDocumentForm();
     this.loadDocumentTypes();
     this.fetchCustomers();
+  }
+
+  importCustomers(files: FileList | null): void {
+    this.customerImportErrors = [];
+    if (!files || files.length === 0) {
+      alert('Please select an Excel file to import.');
+      return;
+    }
+    const file = files[0];
+    this.customerService.importCustomers(file).subscribe({
+      next: (response) => {
+        if (response.success) {
+          const results = response.results || [];
+          const failedRows = results.filter((row: any) => !row.success);
+          if (failedRows.length === 0) {
+            alert('Customers imported successfully!');
+            this.fetchCustomers();
+          } else {
+            const allErrors: string[] = [];
+            for (const row of failedRows.slice(0, 10)) {
+              if (Array.isArray(row.errors)) {
+                for (const error of row.errors) {
+                  allErrors.push(`Row ${row.row}: ${error}`);
+                }
+              } else if (row.errors) {
+                allErrors.push(`Row ${row.row}: ${row.errors}`);
+              } else {
+                allErrors.push(`Row ${row.row}: Unknown error`);
+              }
+            }
+            this.customerImportErrors = allErrors;
+            if (failedRows.length > 10) {
+              this.customerImportErrors.push(`... and ${failedRows.length - 10} more rows with errors`);
+            }
+          }
+        } else {
+          this.customerImportErrors = [response.message || 'Import failed.'];
+        }
+      },
+      error: (error) => {
+        console.error('Error importing customers:', error);
+        this.customerImportErrors = [error.error?.message || error.message || 'Error importing customers.'];
+      }
+    });
   }
 
   initializeForm(): void {

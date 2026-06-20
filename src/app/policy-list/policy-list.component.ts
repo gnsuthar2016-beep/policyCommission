@@ -124,6 +124,25 @@ export class PolicyListComponent implements OnInit {
     this.router.navigate(['/policies', policyId]);
   }
 
+  deletePolicy(policyId: number, policyNumber: string): void {
+    if (confirm(`Are you sure you want to delete policy ${policyNumber}? This action cannot be undone.`)) {
+      this.policyService.deletePolicy(policyId).subscribe({
+        next: (response) => {
+          if (response.success) {
+            alert('Policy deleted successfully!');
+            this.loadPolicies();
+          } else {
+            alert(response.message || 'Failed to delete policy');
+          }
+        },
+        error: (error) => {
+          console.error('Error deleting policy:', error);
+          alert(error.error?.message || error.message || 'Error deleting policy');
+        }
+      });
+    }
+  }
+
   getDocumentCount(policy: any): number {
     return policy.documents ? policy.documents.length : 0;
   }

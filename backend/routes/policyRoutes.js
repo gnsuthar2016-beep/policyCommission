@@ -53,6 +53,217 @@ const upload = multer({
   }
 });
 
+const excelUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ];
+    if (allowedMimeTypes.includes(file.mimetype) || /\.(xlsx|xls)$/i.test(file.originalname)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only Excel files are allowed'));
+    }
+  }
+});
+
+// Import policies via Excel
+const XLSX = require('xlsx');
+router.post('/api/import/policies', (req, res, next) => {
+  excelUpload.single('file')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'Excel file is required' });
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
+
+    const results = [];
+    const toCreate = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 2; // header is row 1
+      const errors = [];
+
+      // Helper to validate and trim
+      const validateText = (field, value, label, minLen = 1, maxLen = 255) => {
+        const val = value ? String(value).trim() : '';
+        if (!val) {
+          errors.push(`${field}: value is empty (required field)`);
+          return null;
+        }
+        if (val.length < minLen) {
+          errors.push(`${field}: must be at least ${minLen} characters (provided: ${val.length})`);
+          return null;
+        }
+        if (val.length > maxLen) {
+          errors.push(`${field}: length exceeds ${maxLen} characters (provided: ${val.length})`);
+          return null;
+        }
+        return val;
+      };
+
+      const validateNumeric = (field, value) => {
+        if (value === '' || value === null || value === undefined) {
+          errors.push(`${field}: value is empty (required numeric field)`);
+          return null;
+        }
+        const num = Number(value);
+        if (isNaN(num)) {
+          errors.push(`${field}: must be a valid number (provided: "${value}")`);
+          return null;
+        }
+        if (num < 0) {
+          errors.push(`${field}: must be a positive number (provided: ${num})`);
+          return null;
+        }
+        return num;
+      };
+
+      const validateDate = (field, value) => {
+        if (!value || String(value).trim() === '') {
+          errors.push(`${field}: value is empty (required field)`);
+          return null;
+        }
+        const date = new Date(value);
+        if (isNaN(date.getTime())) {
+          errors.push(`${field}: invalid date format (use YYYY-MM-DD or MM/DD/YYYY, provided: "${value}")`);
+          return null;
+        }
+        return date;
+      };
+
+      // Validate all mandatory fields
+      const customerName = validateText('customerName', row.customerName, 'Customer Name', 1, 100);
+      const policyType = validateText('policyType', row.policyType, 'Policy Type', 1, 50);
+      const policyNumber = validateText('policyNumber', row.policyNumber, 'Policy Number', 1, 50);
+      const referenceName = validateText('referenceName', row.referenceName, 'Reference Name', 1, 100);
+      const companyName = validateText('companyName', row.companyName, 'Company Name', 1, 100);
+      const insuranceType = validateText('insuranceType', row.insuranceType, 'Insurance Type', 1, 50);
+      const productName = validateText('productName', row.productName, 'Product Name', 1, 100);
+      const periodFrom = validateDate('periodFrom', row.periodFrom);
+      const periodTo = validateDate('periodTo', row.periodTo);
+      const basicODPremium = validateNumeric('basicODPremium', row.basicODPremium);
+      const tpPremium = validateNumeric('tpPremium', row.tpPremium);
+      const netPremium = validateNumeric('netPremium', row.netPremium);
+      const finalPremium = validateNumeric('finalPremium', row.finalPremium);
+      const refBrokerageOn = validateText('refBrokerageOn', row.refBrokerageOn, 'Ref Brokerage On', 1, 50);
+      const totalIDV = validateNumeric('totalIDV', row.totalIDV);
+
+      // Cross-field validation
+      if (periodFrom && periodTo && periodFrom > periodTo) {
+        errors.push('periodFrom: must be before periodTo');
+      }
+
+      if (errors.length > 0) {
+        results.push({ row: rowNum, success: false, errors });
+        continue;
+      }
+
+      // Convert numeric/date fields
+      const parseDate = (v) => {
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? null : d;
+      };
+
+      // Parse optional numeric fields
+      const parseOptionalNumeric = (value) => {
+        if (!value || value === '') return null;
+        const num = Number(value);
+        return isNaN(num) ? null : num;
+      };
+
+      const parseOptionalDate = (value) => {
+        if (!value || String(value).trim() === '') return null;
+        const date = new Date(value);
+        return isNaN(date.getTime()) ? null : date;
+      };
+
+      toCreate.push({
+        customerName,
+        policyType,
+        policyNumber,
+        referenceName,
+        companyName,
+        insuranceType,
+        productName,
+        periodFrom,
+        periodTo,
+        policyDate: parseOptionalDate(row.policyDate),
+        basicODPremium,
+        tpPremium,
+        ncb: parseOptionalNumeric(row.ncb),
+        netPremium,
+        gstPercent: parseOptionalNumeric(row.gstPercent),
+        gstAmount: parseOptionalNumeric(row.gstAmount),
+        finalPremium,
+        refBrokerageOn,
+        premiumSource: row.premiumSource && String(row.premiumSource).trim() ? String(row.premiumSource).trim() : 'Net Premium',
+        refBrokeragePercent: parseOptionalNumeric(row.refBrokeragePercent),
+        refBrokerageAmount: parseOptionalNumeric(row.refBrokerageAmount),
+        totalIDV,
+        make: row.make ? String(row.make).trim() : null,
+        model: row.model ? String(row.model).trim() : null,
+        registrationNumber: row.registrationNumber ? String(row.registrationNumber).trim() : null,
+        __row: rowNum
+      });
+    }
+
+    // Create policies
+    for (const item of toCreate) {
+      try {
+        const created = await Policy.create({
+          customerName: item.customerName,
+          policyType: item.policyType,
+          policyNumber: item.policyNumber,
+          referenceName: item.referenceName,
+          companyName: item.companyName,
+          insuranceType: item.insuranceType,
+          productName: item.productName,
+          periodFrom: item.periodFrom,
+          periodTo: item.periodTo,
+          policyDate: item.policyDate,
+          basicODPremium: item.basicODPremium,
+          tpPremium: item.tpPremium,
+          ncb: item.ncb,
+          netPremium: item.netPremium,
+          gstPercent: item.gstPercent,
+          gstAmount: item.gstAmount,
+          finalPremium: item.finalPremium,
+          refBrokerageOn: item.refBrokerageOn,
+          premiumSource: item.premiumSource,
+          refBrokeragePercent: item.refBrokeragePercent,
+          refBrokerageAmount: item.refBrokerageAmount,
+          totalIDV: item.totalIDV,
+          make: item.make,
+          model: item.model,
+          registrationNumber: item.registrationNumber
+        });
+        results.push({ row: item.__row, success: true, id: created.id });
+      } catch (err) {
+        let errorMsg = err.message;
+        if (err.message.includes('Validation error') && err.errors) {
+          errorMsg = 'Database validation: ' + err.errors.map(e => e.message).join(', ');
+        }
+        results.push({ row: item.__row, success: false, errors: [errorMsg] });
+      }
+    }
+
+    res.status(200).json({ success: true, results });
+  } catch (error) {
+    console.error('Error importing policies:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Helper function to sanitize policy data - removes N/A or null customer names
 const sanitizePolicyData = (policy) => {
   if (policy && (policy.customerName === 'N/A' || !policy.customerName || policy.customerName.trim() === '')) {
@@ -1095,6 +1306,50 @@ router.post('/api/policies/search', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error searching policies',
+      error: error.message
+    });
+  }
+});
+
+// Delete Policy
+router.delete('/api/policy/:id', async (req, res) => {
+  try {
+    const policyId = req.params.id;
+
+    const policy = await Policy.findOne({ where: { id: policyId } });
+    if (!policy) {
+      return res.status(404).json({
+        success: false,
+        message: 'Policy not found'
+      });
+    }
+
+    // Delete associated documents first
+    const documents = await Document.findAll({ where: { policyId: policyId } });
+    for (const doc of documents) {
+      if (doc.cloudinaryPublicId && process.env.CLOUDINARY_URL) {
+        try {
+          const resourceType = getCloudinaryResourceType(doc.fileName);
+          await cloudinary.uploader.destroy(doc.cloudinaryPublicId, { resource_type: resourceType });
+        } catch (cloudError) {
+          console.warn('Cloudinary document delete failed:', cloudError.message || cloudError);
+        }
+      }
+      await doc.destroy();
+    }
+
+    // Delete the policy
+    await policy.destroy();
+
+    res.status(200).json({
+      success: true,
+      message: 'Policy deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting policy:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting policy',
       error: error.message
     });
   }

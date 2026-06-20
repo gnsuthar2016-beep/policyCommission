@@ -58,4 +58,11 @@ export class CustomerService {
   deleteCustomerDocument(documentId: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/customer/document/${documentId}`);
   }
+
+  // Import customers via Excel file (form-data 'file')
+  importCustomers(file: File): Observable<any> {
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post(`${this.apiUrl}/import/customers`, fd);
+  }
 }

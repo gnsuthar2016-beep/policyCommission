@@ -27,6 +27,142 @@ const upload = multer({
   }
 });
 
+const excelUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ];
+    if (allowedMimeTypes.includes(file.mimetype) || /\.(xlsx|xls)$/i.test(file.originalname)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only Excel files are allowed'));
+    }
+  }
+});
+
+// Import customers via Excel
+const XLSX = require('xlsx');
+router.post('/api/import/customers', (req, res, next) => {
+  excelUpload.single('file')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'Excel file is required' });
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
+
+    const results = [];
+    const toCreate = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 2; // header is row 1
+
+      // Expected fields: name, mobileNumber, alternativeMobileNumber, emailId, dateOfBirth, remark
+      const errors = [];
+      
+      // Validate name
+      const nameVal = row.name ? String(row.name).trim() : '';
+      if (!nameVal) {
+        errors.push('name: value is empty (required field)');
+      } else if (nameVal.length < 2) {
+        errors.push('name: must be at least 2 characters long');
+      } else if (nameVal.length > 100) {
+        errors.push('name: length exceeds 100 characters (max 100)');
+      }
+      
+      // Validate mobileNumber
+      const mobileVal = row.mobileNumber ? String(row.mobileNumber).trim() : '';
+      if (!mobileVal) {
+        errors.push('mobileNumber: value is empty (required field)');
+      } else if (!/^\d{10}$/.test(mobileVal.replace(/[^\d]/g, ''))) {
+        errors.push('mobileNumber: must be a valid 10-digit number');
+      }
+      
+      // Validate alternativeMobileNumber if provided
+      const altMobileVal = row.alternativeMobileNumber ? String(row.alternativeMobileNumber).trim() : '';
+      if (altMobileVal && !/^\d{10}$/.test(altMobileVal.replace(/[^\d]/g, ''))) {
+        errors.push('alternativeMobileNumber: must be a valid 10-digit number if provided');
+      }
+      
+      // Validate emailId if provided
+      const emailVal = row.emailId ? String(row.emailId).trim() : '';
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailVal && !emailRegex.test(emailVal)) {
+        errors.push('emailId: invalid email format');
+      } else if (emailVal && emailVal.length > 100) {
+        errors.push('emailId: length exceeds 100 characters');
+      }
+      
+      // Validate dateOfBirth if provided
+      const dobVal = row.dateOfBirth ? String(row.dateOfBirth).trim() : '';
+      if (dobVal) {
+        const dobDate = new Date(dobVal);
+        if (isNaN(dobDate.getTime())) {
+          errors.push('dateOfBirth: invalid date format (use YYYY-MM-DD or MM/DD/YYYY)');
+        } else if (dobDate > new Date()) {
+          errors.push('dateOfBirth: cannot be a future date');
+        }
+      }
+
+      if (errors.length > 0) {
+        results.push({ row: rowNum, success: false, errors });
+        continue;
+      }
+
+      toCreate.push({
+        name: nameVal,
+        mobileNumber: mobileVal,
+        alternativeMobileNumber: altMobileVal || null,
+        emailId: emailVal || null,
+        dateOfBirth: dobVal ? new Date(dobVal) : null,
+        remark: row.remark ? String(row.remark).trim() : null,
+        __row: rowNum
+      });
+    }
+
+    // De-duplicate and validate uniqueness
+    for (const item of toCreate) {
+      const existing = await Customer.findOne({ where: { mobileNumber: item.mobileNumber } });
+      if (existing) {
+        results.push({ row: item.__row, success: false, errors: ['mobileNumber: already exists in database (must be unique)'] });
+        continue;
+      }
+      // create
+      try {
+        const created = await Customer.create({
+          name: item.name,
+          mobileNumber: item.mobileNumber,
+          alternativeMobileNumber: item.alternativeMobileNumber,
+          emailId: item.emailId,
+          dateOfBirth: item.dateOfBirth,
+          remark: item.remark
+        });
+        results.push({ row: item.__row, success: true, id: created.id });
+      } catch (err) {
+        let errorMsg = err.message;
+        if (err.message.includes('Validation error')) {
+          errorMsg = 'Database validation failed: ' + (err.errors ? err.errors.map(e => e.message).join(', ') : err.message);
+        }
+        results.push({ row: item.__row, success: false, errors: [errorMsg] });
+      }
+    }
+
+    res.status(200).json({ success: true, results });
+  } catch (error) {
+    console.error('Error importing customers:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Determine Cloudinary resource type from filename
 function getCloudinaryResourceType(fileName) {
   if (!fileName || typeof fileName !== 'string') return 'image';
@@ -389,3 +525,4 @@ router.delete('/api/customer/document/:id', async (req, res) => {
 });
 
 module.exports = router;
+

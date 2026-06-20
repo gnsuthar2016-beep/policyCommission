@@ -39,6 +39,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   vehicleModels: any[] = [];
   registrationNumbers: any[] = [];
   documentTypes: any[] = [];
+  policyImportErrors: string[] = [];
 
   // Filtered options for autocomplete
   filteredCustomerNames: any[] = [];
@@ -55,6 +56,49 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router
   ) {}
+
+  importPolicies(files: FileList | null): void {
+    this.policyImportErrors = [];
+    if (!files || files.length === 0) {
+      alert('Please select an Excel file to import.');
+      return;
+    }
+    const file = files[0];
+    this.policyService.importPolicies(file).subscribe({
+      next: (response) => {
+        if (response.success) {
+          const results = response.results || [];
+          const failedRows = results.filter((row: any) => !row.success);
+          if (failedRows.length === 0) {
+            alert('Policies imported successfully!');
+          } else {
+            const allErrors: string[] = [];
+            for (const row of failedRows.slice(0, 10)) {
+              if (Array.isArray(row.errors)) {
+                for (const error of row.errors) {
+                  allErrors.push(`Row ${row.row}: ${error}`);
+                }
+              } else if (row.errors) {
+                allErrors.push(`Row ${row.row}: ${row.errors}`);
+              } else {
+                allErrors.push(`Row ${row.row}: Unknown error`);
+              }
+            }
+            this.policyImportErrors = allErrors;
+            if (failedRows.length > 10) {
+              this.policyImportErrors.push(`... and ${failedRows.length - 10} more rows with errors`);
+            }
+          }
+        } else {
+          this.policyImportErrors = [response.message || 'Import failed.'];
+        }
+      },
+      error: (error) => {
+        console.error('Error importing policies:', error);
+        this.policyImportErrors = [error.error?.message || error.message || 'Error importing policies.'];
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.initializeForm();
