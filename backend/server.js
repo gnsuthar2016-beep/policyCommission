@@ -17,6 +17,7 @@ const policyRoutes = require('./routes/policyRoutes');
 const miscMasterRoutes = require('./routes/miscMasterRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const referenceRoutes = require('./routes/referenceRoutes');
+const documentAiRoutes = require('./routes/documentAiRoutes');
 
 dotenv.config();
 
@@ -33,27 +34,26 @@ app.use(policyRoutes);
 app.use(miscMasterRoutes);
 app.use(customerRoutes);
 app.use(referenceRoutes);
+app.use(documentAiRoutes);
 
 // Database connection
-sequelize.authenticate()
-  .then(async () => {
+async function initializeDatabase() {
+  try {
+    await sequelize.authenticate();
     console.log('✓ Database connection successful');
-    
-    // Run migrations
+
     console.log('Running database migrations...');
     await fixCustomerNameColumn();
     await addPremiumSourceColumn();
-    
-    // Sync all models
-    return sequelize.sync({ alter: true });
-  })
-  .then(() => {
+
+    await sequelize.sync({ alter: true });
     console.log('✓ Database tables synced successfully');
-  })
-  .catch(err => {
-    console.error('✗ Database error:', err);
-    process.exit(1);
-  });
+  } catch (err) {
+    console.warn('⚠ Database unavailable. Continuing without DB initialization:', err.message);
+  }
+}
+
+initializeDatabase();
 
 // Login API endpoint
 app.post('/api/login', async (req, res) => {
