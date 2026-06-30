@@ -93,72 +93,79 @@ router.post('/api/import/policies', (req, res, next) => {
       const rowNum = i + 2; // header is row 1
       const errors = [];
 
-      // Helper to validate and trim
-      const validateText = (field, value, label, minLen = 1, maxLen = 255) => {
+      const normalizeText = (value, fallback, maxLen = 255) => {
         const val = value ? String(value).trim() : '';
         if (!val) {
-          errors.push(`${field}: value is empty (required field)`);
-          return null;
-        }
-        if (val.length < minLen) {
-          errors.push(`${field}: must be at least ${minLen} characters (provided: ${val.length})`);
-          return null;
+          return fallback;
         }
         if (val.length > maxLen) {
-          errors.push(`${field}: length exceeds ${maxLen} characters (provided: ${val.length})`);
-          return null;
+          errors.push(`value exceeds ${maxLen} characters (provided: ${val.length})`);
+          return fallback;
         }
         return val;
       };
 
-      const validateNumeric = (field, value) => {
-        if (value === '' || value === null || value === undefined) {
-          errors.push(`${field}: value is empty (required numeric field)`);
-          return null;
+      const parseNumeric = (field, value, fallback = 0) => {
+        const val = value === '' || value === null || value === undefined ? '' : String(value).trim();
+        if (val === '') {
+          return fallback;
         }
-        const num = Number(value);
+        const num = Number(val);
         if (isNaN(num)) {
           errors.push(`${field}: must be a valid number (provided: "${value}")`);
-          return null;
+          return fallback;
         }
         if (num < 0) {
           errors.push(`${field}: must be a positive number (provided: ${num})`);
-          return null;
+          return fallback;
         }
         return num;
       };
 
-      const validateDate = (field, value) => {
-        if (!value || String(value).trim() === '') {
-          errors.push(`${field}: value is empty (required field)`);
-          return null;
+      const parseDateValue = (field, value, fallback) => {
+        const val = value ? String(value).trim() : '';
+        if (!val) {
+          return fallback;
         }
-        const date = new Date(value);
+        const date = new Date(val);
         if (isNaN(date.getTime())) {
           errors.push(`${field}: invalid date format (use YYYY-MM-DD or MM/DD/YYYY, provided: "${value}")`);
-          return null;
+          return fallback;
         }
         return date;
       };
 
-      // Validate all mandatory fields
-      const customerName = validateText('customerName', row.customerName, 'Customer Name', 1, 100);
-      const policyType = validateText('policyType', row.policyType, 'Policy Type', 1, 50);
-      const policyNumber = validateText('policyNumber', row.policyNumber, 'Policy Number', 1, 50);
-      const referenceName = validateText('referenceName', row.referenceName, 'Reference Name', 1, 100);
-      const companyName = validateText('companyName', row.companyName, 'Company Name', 1, 100);
-      const insuranceType = validateText('insuranceType', row.insuranceType, 'Insurance Type', 1, 50);
-      const productName = validateText('productName', row.productName, 'Product Name', 1, 100);
-      const periodFrom = validateDate('periodFrom', row.periodFrom);
-      const periodTo = validateDate('periodTo', row.periodTo);
-      const basicODPremium = validateNumeric('basicODPremium', row.basicODPremium);
-      const tpPremium = validateNumeric('tpPremium', row.tpPremium);
-      const netPremium = validateNumeric('netPremium', row.netPremium);
-      const finalPremium = validateNumeric('finalPremium', row.finalPremium);
-      const refBrokerageOn = validateText('refBrokerageOn', row.refBrokerageOn, 'Ref Brokerage On', 1, 50);
-      const totalIDV = validateNumeric('totalIDV', row.totalIDV);
+      const now = new Date();
+      const defaultFrom = now;
+      const defaultTo = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
 
-      // Cross-field validation
+      const customerName = normalizeText(row.customerName, `Unknown Customer ${rowNum}`, 100);
+      const policyType = normalizeText(row.policyType, 'Unknown', 50);
+      const policyNumber = normalizeText(row.policyNumber, `DUMMY_POLICY_${rowNum}_${Date.now()}`, 50);
+      const referenceName = normalizeText(row.referenceName, 'Unknown', 100);
+      const companyName = normalizeText(row.companyName, 'Unknown', 100);
+      const insuranceType = normalizeText(row.insuranceType, 'Unknown', 50);
+      const productName = normalizeText(row.productName, 'Unknown', 100);
+      let periodFrom = parseDateValue('periodFrom', row.periodFrom, defaultFrom);
+      let periodTo = parseDateValue('periodTo', row.periodTo, defaultTo);
+      const basicODPremium = parseNumeric('basicODPremium', row.basicODPremium, 0);
+      const tpPremium = parseNumeric('tpPremium', row.tpPremium, 0);
+      const netPremium = parseNumeric('netPremium', row.netPremium, 0);
+      const finalPremium = parseNumeric('finalPremium', row.finalPremium, 0);
+      const refBrokerageOn = normalizeText(row.refBrokerageOn, 'Net Premium', 50);
+      const totalIDV = parseNumeric('totalIDV', row.totalIDV, 0);
+
+      if (!row.periodFrom && row.periodTo) {
+        periodFrom = periodTo;
+      }
+      if (!row.periodTo && row.periodFrom) {
+        periodTo = periodFrom;
+      }
+      if (!row.periodFrom && !row.periodTo) {
+        periodFrom = defaultFrom;
+        periodTo = defaultTo;
+      }
+
       if (periodFrom && periodTo && periodFrom > periodTo) {
         errors.push('periodFrom: must be before periodTo');
       }
@@ -168,16 +175,9 @@ router.post('/api/import/policies', (req, res, next) => {
         continue;
       }
 
-      // Convert numeric/date fields
-      const parseDate = (v) => {
-        const d = new Date(v);
-        return isNaN(d.getTime()) ? null : d;
-      };
-
-      // Parse optional numeric fields
       const parseOptionalNumeric = (value) => {
-        if (!value || value === '') return null;
-        const num = Number(value);
+        if (value === '' || value === null || value === undefined) return null;
+        const num = Number(String(value).trim());
         return isNaN(num) ? null : num;
       };
 

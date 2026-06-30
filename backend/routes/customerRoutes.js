@@ -69,43 +69,28 @@ router.post('/api/import/customers', (req, res, next) => {
       // Expected fields: name, mobileNumber, alternativeMobileNumber, emailId, dateOfBirth, remark
       const errors = [];
       
-      // Validate name
       const nameVal = row.name ? String(row.name).trim() : '';
-      if (!nameVal) {
-        errors.push('name: value is empty (required field)');
-      } else if (nameVal.length < 2) {
-        errors.push('name: must be at least 2 characters long');
-      } else if (nameVal.length > 100) {
-        errors.push('name: length exceeds 100 characters (max 100)');
-      }
-      
-      // Validate mobileNumber
       const mobileVal = row.mobileNumber ? String(row.mobileNumber).trim() : '';
-      if (!mobileVal) {
-        errors.push('mobileNumber: value is empty (required field)');
-      } else if (!/^\d{10}$/.test(mobileVal.replace(/[^\d]/g, ''))) {
-        errors.push('mobileNumber: must be a valid 10-digit number');
-      }
-      
-      // Validate alternativeMobileNumber if provided
       const altMobileVal = row.alternativeMobileNumber ? String(row.alternativeMobileNumber).trim() : '';
+      const emailVal = row.emailId ? String(row.emailId).trim() : '';
+      const dobVal = row.dateOfBirth ? String(row.dateOfBirth).trim() : '';
+      const remarkVal = row.remark ? String(row.remark).trim() : '';
+
+      // Validate optional fields only when provided
       if (altMobileVal && !/^\d{10}$/.test(altMobileVal.replace(/[^\d]/g, ''))) {
         errors.push('alternativeMobileNumber: must be a valid 10-digit number if provided');
       }
-      
-      // Validate emailId if provided
-      const emailVal = row.emailId ? String(row.emailId).trim() : '';
+
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (emailVal && !emailRegex.test(emailVal)) {
         errors.push('emailId: invalid email format');
       } else if (emailVal && emailVal.length > 100) {
         errors.push('emailId: length exceeds 100 characters');
       }
-      
-      // Validate dateOfBirth if provided
-      const dobVal = row.dateOfBirth ? String(row.dateOfBirth).trim() : '';
+
+      let dobDate = null;
       if (dobVal) {
-        const dobDate = new Date(dobVal);
+        dobDate = new Date(dobVal);
         if (isNaN(dobDate.getTime())) {
           errors.push('dateOfBirth: invalid date format (use YYYY-MM-DD or MM/DD/YYYY)');
         } else if (dobDate > new Date()) {
@@ -118,13 +103,16 @@ router.post('/api/import/customers', (req, res, next) => {
         continue;
       }
 
+      const customerName = nameVal || `Unknown Customer ${rowNum}`;
+      const mobileNumber = mobileVal || `DUMMY_MOBILE_${rowNum}_${Date.now()}`;
+
       toCreate.push({
-        name: nameVal,
-        mobileNumber: mobileVal,
+        name: customerName,
+        mobileNumber,
         alternativeMobileNumber: altMobileVal || null,
         emailId: emailVal || null,
-        dateOfBirth: dobVal ? new Date(dobVal) : null,
-        remark: row.remark ? String(row.remark).trim() : null,
+        dateOfBirth: dobDate || null,
+        remark: remarkVal || null,
         __row: rowNum
       });
     }
