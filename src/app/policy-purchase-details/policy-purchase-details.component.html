@@ -24,7 +24,10 @@
         <span>Choose Excel file</span>
         <input type="file" #policyExcelInput accept=".xlsx,.xls" />
       </label>
-      <button type="button" class="btn btn-primary upload-import-button" (click)="importPolicies(policyExcelInput.files)">Upload and Import</button>
+      <button type="button" class="btn btn-primary upload-import-button" (click)="importPolicies(policyExcelInput.files)" [disabled]="policyImportLoading">
+        <span *ngIf="policyImportLoading" class="spinner"></span>
+        {{ policyImportLoading ? 'Importing...' : 'Upload and Import' }}
+      </button>
     </div>
 
     <div class="excel-import-footer" *ngIf="policyImportErrors.length > 0">

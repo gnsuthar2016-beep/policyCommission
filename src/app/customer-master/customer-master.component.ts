@@ -15,6 +15,7 @@ export class CustomerMasterComponent implements OnInit {
   documents: any[] = [];
   documentUploadError = '';
   customerImportErrors: string[] = [];
+  customerImportLoading = false;
   customers: any[] = [];
   loading = false;
   isEditMode = false;
@@ -41,8 +42,10 @@ export class CustomerMasterComponent implements OnInit {
       return;
     }
     const file = files[0];
+    this.customerImportLoading = true;
     this.customerService.importCustomers(file).subscribe({
       next: (response) => {
+        this.customerImportLoading = false;
         if (response.success) {
           const results = response.results || [];
           const failedRows = results.filter((row: any) => !row.success);
@@ -72,6 +75,7 @@ export class CustomerMasterComponent implements OnInit {
         }
       },
       error: (error) => {
+        this.customerImportLoading = false;
         console.error('Error importing customers:', error);
         this.customerImportErrors = [error.error?.message || error.message || 'Error importing customers.'];
       }

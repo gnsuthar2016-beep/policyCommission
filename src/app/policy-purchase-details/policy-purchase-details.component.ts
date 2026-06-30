@@ -40,6 +40,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   registrationNumbers: any[] = [];
   documentTypes: any[] = [];
   policyImportErrors: string[] = [];
+  policyImportLoading = false;
 
   // Filtered options for autocomplete
   filteredCustomerNames: any[] = [];
@@ -64,8 +65,10 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       return;
     }
     const file = files[0];
+    this.policyImportLoading = true;
     this.policyService.importPolicies(file).subscribe({
       next: (response) => {
+        this.policyImportLoading = false;
         if (response.success) {
           const results = response.results || [];
           const failedRows = results.filter((row: any) => !row.success);
@@ -94,6 +97,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
         }
       },
       error: (error) => {
+        this.policyImportLoading = false;
         console.error('Error importing policies:', error);
         this.policyImportErrors = [error.error?.message || error.message || 'Error importing policies.'];
       }

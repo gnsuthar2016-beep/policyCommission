@@ -13,7 +13,10 @@
         <span>Choose Excel file</span>
         <input type="file" #customerExcelInput accept=".xlsx,.xls" />
       </label>
-      <button class="btn btn-primary upload-import-button" (click)="importCustomers(customerExcelInput.files)">Upload and Import</button>
+      <button class="btn btn-primary upload-import-button" (click)="importCustomers(customerExcelInput.files)" [disabled]="customerImportLoading">
+        <span *ngIf="customerImportLoading" class="spinner"></span>
+        {{ customerImportLoading ? 'Importing...' : 'Upload and Import' }}
+      </button>
     </div>
 
     <div class="excel-import-footer" *ngIf="customerImportErrors.length > 0">

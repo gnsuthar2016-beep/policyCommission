@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const streamifier = require('streamifier');
 const { v2: cloudinary } = require('cloudinary');
+const { Op } = require('sequelize');
 const router = express.Router();
 const Customer = require('../models/Customer');
 const CustomerDocument = require('../models/CustomerDocument');
@@ -45,6 +46,28 @@ const excelUpload = multer({
 
 // Import customers via Excel
 const XLSX = require('xlsx');
+
+const chunkArray = (array, size) => {
+  const chunks = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
+  }
+  return chunks;
+};
+
+const normalizeCustomerField = (value) => {
+  return value ? String(value).trim() : '';
+};
+
+const parseCustomerDob = (value) => {
+  if (!value || String(value).trim() === '') return null;
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? null : date;
+};
+
+const formatDummyMobile = (rowNum) => `DUMMY_MOBILE_${rowNum}_${Date.now()}`;
+const formatDummyName = (rowNum) => `Unknown Customer ${rowNum}`;
+
 router.post('/api/import/customers', (req, res, next) => {
   excelUpload.single('file')(req, res, (err) => {
     if (err) {
@@ -61,22 +84,21 @@ router.post('/api/import/customers', (req, res, next) => {
 
     const results = [];
     const toCreate = [];
+    const fileMobileMap = new Map();
+    const rowMobileNumbers = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNum = i + 2; // header is row 1
-
-      // Expected fields: name, mobileNumber, alternativeMobileNumber, emailId, dateOfBirth, remark
       const errors = [];
-      
-      const nameVal = row.name ? String(row.name).trim() : '';
-      const mobileVal = row.mobileNumber ? String(row.mobileNumber).trim() : '';
-      const altMobileVal = row.alternativeMobileNumber ? String(row.alternativeMobileNumber).trim() : '';
-      const emailVal = row.emailId ? String(row.emailId).trim() : '';
-      const dobVal = row.dateOfBirth ? String(row.dateOfBirth).trim() : '';
-      const remarkVal = row.remark ? String(row.remark).trim() : '';
 
-      // Validate optional fields only when provided
+      const nameVal = normalizeCustomerField(row.name);
+      const mobileVal = normalizeCustomerField(row.mobileNumber);
+      const altMobileVal = normalizeCustomerField(row.alternativeMobileNumber);
+      const emailVal = normalizeCustomerField(row.emailId);
+      const dobDate = parseCustomerDob(row.dateOfBirth);
+      const remarkVal = normalizeCustomerField(row.remark);
+
       if (altMobileVal && !/^\d{10}$/.test(altMobileVal.replace(/[^\d]/g, ''))) {
         errors.push('alternativeMobileNumber: must be a valid 10-digit number if provided');
       }
@@ -88,23 +110,26 @@ router.post('/api/import/customers', (req, res, next) => {
         errors.push('emailId: length exceeds 100 characters');
       }
 
-      let dobDate = null;
-      if (dobVal) {
-        dobDate = new Date(dobVal);
-        if (isNaN(dobDate.getTime())) {
-          errors.push('dateOfBirth: invalid date format (use YYYY-MM-DD or MM/DD/YYYY)');
-        } else if (dobDate > new Date()) {
-          errors.push('dateOfBirth: cannot be a future date');
-        }
+      if (row.dateOfBirth && !dobDate) {
+        errors.push('dateOfBirth: invalid date format (use YYYY-MM-DD or MM/DD/YYYY)');
+      }
+      if (dobDate && dobDate > new Date()) {
+        errors.push('dateOfBirth: cannot be a future date');
+      }
+
+      const customerName = nameVal || formatDummyName(rowNum);
+      const mobileNumber = mobileVal || formatDummyMobile(rowNum);
+
+      if (fileMobileMap.has(mobileNumber)) {
+        errors.push(`mobileNumber: duplicate value in Excel file with row ${fileMobileMap.get(mobileNumber)}`);
+      } else {
+        fileMobileMap.set(mobileNumber, rowNum);
       }
 
       if (errors.length > 0) {
         results.push({ row: rowNum, success: false, errors });
         continue;
       }
-
-      const customerName = nameVal || `Unknown Customer ${rowNum}`;
-      const mobileNumber = mobileVal || `DUMMY_MOBILE_${rowNum}_${Date.now()}`;
 
       toCreate.push({
         name: customerName,
@@ -115,32 +140,51 @@ router.post('/api/import/customers', (req, res, next) => {
         remark: remarkVal || null,
         __row: rowNum
       });
+
+      if (mobileVal) {
+        rowMobileNumbers.push(mobileVal);
+      }
     }
 
-    // De-duplicate and validate uniqueness
+    const existingCustomers = await Customer.findAll({
+      where: {
+        mobileNumber: {
+          [Op.in]: Array.from(new Set(rowMobileNumbers))
+        }
+      },
+      attributes: ['mobileNumber']
+    });
+    const existingMobileSet = new Set(existingCustomers.map((customer) => customer.mobileNumber));
+
+    const itemsToBulkCreate = [];
     for (const item of toCreate) {
-      const existing = await Customer.findOne({ where: { mobileNumber: item.mobileNumber } });
-      if (existing) {
+      if (existingMobileSet.has(item.mobileNumber) && !item.mobileNumber.startsWith('DUMMY_MOBILE_')) {
         results.push({ row: item.__row, success: false, errors: ['mobileNumber: already exists in database (must be unique)'] });
         continue;
       }
-      // create
+      itemsToBulkCreate.push(item);
+    }
+
+    const batches = chunkArray(itemsToBulkCreate, 500);
+    for (const batch of batches) {
+      const batchData = batch.map((item) => ({
+        name: item.name,
+        mobileNumber: item.mobileNumber,
+        alternativeMobileNumber: item.alternativeMobileNumber,
+        emailId: item.emailId,
+        dateOfBirth: item.dateOfBirth,
+        remark: item.remark
+      }));
+
       try {
-        const created = await Customer.create({
-          name: item.name,
-          mobileNumber: item.mobileNumber,
-          alternativeMobileNumber: item.alternativeMobileNumber,
-          emailId: item.emailId,
-          dateOfBirth: item.dateOfBirth,
-          remark: item.remark
-        });
-        results.push({ row: item.__row, success: true, id: created.id });
-      } catch (err) {
-        let errorMsg = err.message;
-        if (err.message.includes('Validation error')) {
-          errorMsg = 'Database validation failed: ' + (err.errors ? err.errors.map(e => e.message).join(', ') : err.message);
+        const createdItems = await Customer.bulkCreate(batchData, { validate: false, individualHooks: false });
+        for (let i = 0; i < createdItems.length; i++) {
+          results.push({ row: batch[i].__row, success: true, id: createdItems[i].id });
         }
-        results.push({ row: item.__row, success: false, errors: [errorMsg] });
+      } catch (err) {
+        for (const item of batch) {
+          results.push({ row: item.__row, success: false, errors: ['Database insert error: ' + err.message] });
+        }
       }
     }
 
