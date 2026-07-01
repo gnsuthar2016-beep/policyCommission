@@ -49,9 +49,13 @@ export class CustomerMasterComponent implements OnInit {
         if (response.success) {
           const results = response.results || [];
           const failedRows = results.filter((row: any) => !row.success);
+          const successfulRows = results.filter((row: any) => row.success);
+          if (successfulRows.length > 0) {
+            this.fetchCustomers();
+          }
+
           if (failedRows.length === 0) {
             alert('Customers imported successfully!');
-            this.fetchCustomers();
           } else {
             const allErrors: string[] = [];
             for (const row of failedRows.slice(0, 10)) {
@@ -68,6 +72,10 @@ export class CustomerMasterComponent implements OnInit {
             this.customerImportErrors = allErrors;
             if (failedRows.length > 10) {
               this.customerImportErrors.push(`... and ${failedRows.length - 10} more rows with errors`);
+            }
+
+            if (successfulRows.length > 0) {
+              alert(`Imported ${successfulRows.length} rows successfully, ${failedRows.length} rows failed.`);
             }
           }
         } else {

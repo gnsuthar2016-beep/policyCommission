@@ -13,8 +13,7 @@ const Customer = sequelize.define('Customer', {
   },
   mobileNumber: {
     type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
+    allowNull: true
   },
   alternativeMobileNumber: {
     type: DataTypes.STRING,

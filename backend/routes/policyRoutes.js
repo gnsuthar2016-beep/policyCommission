@@ -87,8 +87,6 @@ router.post('/api/import/policies', (req, res, next) => {
 
     const results = [];
     const toCreate = [];
-    const filePolicyMap = new Map();
-    const rowPolicyNumbers = [];
 
     const normalizeText = (value, fallback, maxLen = 255, errors) => {
       const val = value ? String(value).trim() : '';
@@ -101,6 +99,8 @@ router.post('/api/import/policies', (req, res, next) => {
       }
       return val;
     };
+
+    const formatDummyPolicyNumber = (rowNum) => `DUMMY_POLICY_${rowNum}`;
 
     const parseNumeric = (field, value, fallback = 0, errors) => {
       const val = value === '' || value === null || value === undefined ? '' : String(value).trim();
@@ -141,20 +141,20 @@ router.post('/api/import/policies', (req, res, next) => {
       const rowNum = i + 2; // header is row 1
       const errors = [];
 
-      const customerName = normalizeText(row.customerName, `Unknown Customer ${rowNum}`, 100, errors);
-      const policyType = normalizeText(row.policyType, 'Unknown', 50, errors);
-      const policyNumber = normalizeText(row.policyNumber, `DUMMY_POLICY_${rowNum}_${Date.now()}`, 50, errors);
-      const referenceName = normalizeText(row.referenceName, 'Unknown', 100, errors);
-      const companyName = normalizeText(row.companyName, 'Unknown', 100, errors);
-      const insuranceType = normalizeText(row.insuranceType, 'Unknown', 50, errors);
-      const productName = normalizeText(row.productName, 'Unknown', 100, errors);
+      const customerName = normalizeText(row.customerName, 'Dummy Customer Name', 100, errors);
+      const policyType = normalizeText(row.policyType, 'Dummy Policy Type', 50, errors);
+      const policyNumber = normalizeText(row.policyNumber, formatDummyPolicyNumber(rowNum), 50, errors);
+      const referenceName = normalizeText(row.referenceName, 'Dummy Reference Name', 100, errors);
+      const companyName = normalizeText(row.companyName, 'Dummy Company Name', 100, errors);
+      const insuranceType = normalizeText(row.insuranceType, 'Dummy Insurance Type', 50, errors);
+      const productName = normalizeText(row.productName, 'Dummy Product Name', 100, errors);
       let periodFrom = parseDateValue('periodFrom', row.periodFrom, defaultFrom, errors);
       let periodTo = parseDateValue('periodTo', row.periodTo, defaultTo, errors);
       const basicODPremium = parseNumeric('basicODPremium', row.basicODPremium, 0, errors);
       const tpPremium = parseNumeric('tpPremium', row.tpPremium, 0, errors);
       const netPremium = parseNumeric('netPremium', row.netPremium, 0, errors);
       const finalPremium = parseNumeric('finalPremium', row.finalPremium, 0, errors);
-      const refBrokerageOn = normalizeText(row.refBrokerageOn, 'Net Premium', 50, errors);
+      const refBrokerageOn = normalizeText(row.refBrokerageOn, 'Dummy Ref Brokerage On', 50, errors);
       const totalIDV = parseNumeric('totalIDV', row.totalIDV, 0, errors);
 
       if (!row.periodFrom && row.periodTo) {
@@ -172,31 +172,21 @@ router.post('/api/import/policies', (req, res, next) => {
         errors.push('periodFrom: must be before periodTo');
       }
 
-      if (filePolicyMap.has(policyNumber)) {
-        errors.push(`policyNumber: duplicate value in Excel file with row ${filePolicyMap.get(policyNumber)}`);
-      } else {
-        filePolicyMap.set(policyNumber, rowNum);
-      }
-
       if (errors.length > 0) {
         results.push({ row: rowNum, success: false, errors });
         continue;
       }
 
-      if (row.policyNumber && String(row.policyNumber).trim()) {
-        rowPolicyNumbers.push(String(row.policyNumber).trim());
-      }
-
       const parseOptionalNumeric = (value) => {
-        if (value === '' || value === null || value === undefined) return null;
+        if (value === '' || value === null || value === undefined) return 0;
         const num = Number(String(value).trim());
-        return isNaN(num) ? null : num;
+        return isNaN(num) ? 0 : num;
       };
 
       const parseOptionalDate = (value) => {
-        if (!value || String(value).trim() === '') return null;
+        if (!value || String(value).trim() === '') return new Date('2000-01-01');
         const date = new Date(value);
-        return isNaN(date.getTime()) ? null : date;
+        return isNaN(date.getTime()) ? new Date('2000-01-01') : date;
       };
 
       toCreate.push({
@@ -229,24 +219,7 @@ router.post('/api/import/policies', (req, res, next) => {
       });
     }
 
-    const existingPolicies = await Policy.findAll({
-      where: {
-        policyNumber: {
-          [Op.in]: Array.from(new Set(rowPolicyNumbers))
-        }
-      },
-      attributes: ['policyNumber']
-    });
-    const existingPolicySet = new Set(existingPolicies.map((policy) => policy.policyNumber));
-
-    const itemsToBulkCreate = [];
-    for (const item of toCreate) {
-      if (existingPolicySet.has(item.policyNumber) && !item.policyNumber.startsWith('DUMMY_POLICY_')) {
-        results.push({ row: item.__row, success: false, errors: ['policyNumber: already exists in database (must be unique)'] });
-        continue;
-      }
-      itemsToBulkCreate.push(item);
-    }
+    const itemsToBulkCreate = toCreate;
 
     const chunkArray = (array, size) => {
       const chunks = [];
@@ -295,46 +268,6 @@ router.post('/api/import/policies', (req, res, next) => {
         for (const item of batch) {
           results.push({ row: item.__row, success: false, errors: ['Database insert error: ' + err.message] });
         }
-      }
-    }
-
-    // Create policies
-    for (const item of toCreate) {
-      try {
-        const created = await Policy.create({
-          customerName: item.customerName,
-          policyType: item.policyType,
-          policyNumber: item.policyNumber,
-          referenceName: item.referenceName,
-          companyName: item.companyName,
-          insuranceType: item.insuranceType,
-          productName: item.productName,
-          periodFrom: item.periodFrom,
-          periodTo: item.periodTo,
-          policyDate: item.policyDate,
-          basicODPremium: item.basicODPremium,
-          tpPremium: item.tpPremium,
-          ncb: item.ncb,
-          netPremium: item.netPremium,
-          gstPercent: item.gstPercent,
-          gstAmount: item.gstAmount,
-          finalPremium: item.finalPremium,
-          refBrokerageOn: item.refBrokerageOn,
-          premiumSource: item.premiumSource,
-          refBrokeragePercent: item.refBrokeragePercent,
-          refBrokerageAmount: item.refBrokerageAmount,
-          totalIDV: item.totalIDV,
-          make: item.make,
-          model: item.model,
-          registrationNumber: item.registrationNumber
-        });
-        results.push({ row: item.__row, success: true, id: created.id });
-      } catch (err) {
-        let errorMsg = err.message;
-        if (err.message.includes('Validation error') && err.errors) {
-          errorMsg = 'Database validation: ' + err.errors.map(e => e.message).join(', ');
-        }
-        results.push({ row: item.__row, success: false, errors: [errorMsg] });
       }
     }
 

@@ -13,6 +13,7 @@ const Customer = require('./models/Customer');
 const Reference = require('./models/Reference');
 const { fixCustomerNameColumn } = require('./migrations/fix-customer-name');
 const { addPremiumSourceColumn } = require('./migrations/add-premium-source');
+const { addPolicyNumberUniqueConstraint } = require('./migrations/add-policy-number-unique');
 const policyRoutes = require('./routes/policyRoutes');
 const miscMasterRoutes = require('./routes/miscMasterRoutes');
 const customerRoutes = require('./routes/customerRoutes');
@@ -45,6 +46,7 @@ async function initializeDatabase() {
     console.log('Running database migrations...');
     await fixCustomerNameColumn();
     await addPremiumSourceColumn();
+    await addPolicyNumberUniqueConstraint();
 
     await sequelize.sync({ alter: true });
     console.log('✓ Database tables synced successfully');

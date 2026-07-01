@@ -65,8 +65,7 @@ const parseCustomerDob = (value) => {
   return isNaN(date.getTime()) ? null : date;
 };
 
-const formatDummyMobile = (rowNum) => `DUMMY_MOBILE_${rowNum}_${Date.now()}`;
-const formatDummyName = (rowNum) => `Unknown Customer ${rowNum}`;
+const formatDummyText = (fieldName) => `Dummy ${fieldName}`;
 
 router.post('/api/import/customers', (req, res, next) => {
   excelUpload.single('file')(req, res, (err) => {
@@ -84,8 +83,6 @@ router.post('/api/import/customers', (req, res, next) => {
 
     const results = [];
     const toCreate = [];
-    const fileMobileMap = new Map();
-    const rowMobileNumbers = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -117,14 +114,8 @@ router.post('/api/import/customers', (req, res, next) => {
         errors.push('dateOfBirth: cannot be a future date');
       }
 
-      const customerName = nameVal || formatDummyName(rowNum);
-      const mobileNumber = mobileVal || formatDummyMobile(rowNum);
-
-      if (fileMobileMap.has(mobileNumber)) {
-        errors.push(`mobileNumber: duplicate value in Excel file with row ${fileMobileMap.get(mobileNumber)}`);
-      } else {
-        fileMobileMap.set(mobileNumber, rowNum);
-      }
+      const customerName = nameVal || formatDummyText('Customer Name');
+      const mobileNumber = mobileVal || null;
 
       if (errors.length > 0) {
         results.push({ row: rowNum, success: false, errors });
@@ -140,30 +131,9 @@ router.post('/api/import/customers', (req, res, next) => {
         remark: remarkVal || null,
         __row: rowNum
       });
-
-      if (mobileVal) {
-        rowMobileNumbers.push(mobileVal);
-      }
     }
 
-    const existingCustomers = await Customer.findAll({
-      where: {
-        mobileNumber: {
-          [Op.in]: Array.from(new Set(rowMobileNumbers))
-        }
-      },
-      attributes: ['mobileNumber']
-    });
-    const existingMobileSet = new Set(existingCustomers.map((customer) => customer.mobileNumber));
-
-    const itemsToBulkCreate = [];
-    for (const item of toCreate) {
-      if (existingMobileSet.has(item.mobileNumber) && !item.mobileNumber.startsWith('DUMMY_MOBILE_')) {
-        results.push({ row: item.__row, success: false, errors: ['mobileNumber: already exists in database (must be unique)'] });
-        continue;
-      }
-      itemsToBulkCreate.push(item);
-    }
+    const itemsToBulkCreate = toCreate;
 
     const batches = chunkArray(itemsToBulkCreate, 500);
     for (const batch of batches) {
@@ -214,18 +184,6 @@ router.post('/api/customer', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Name and Mobile Number are required'
-      });
-    }
-
-    // Check if customer already exists by mobile number
-    const existingCustomerByMobile = await Customer.findOne({
-      where: { mobileNumber: mobileNumber }
-    });
-
-    if (existingCustomerByMobile) {
-      return res.status(400).json({
-        success: false,
-        message: 'Customer with this mobile number already exists'
       });
     }
 
