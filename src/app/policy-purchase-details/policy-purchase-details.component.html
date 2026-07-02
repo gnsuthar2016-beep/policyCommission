@@ -115,16 +115,13 @@
           </div>
         </div>
 
-        <!-- Insurance Branch -->
+        <!-- Insurance Branch (optional) -->
         <div class="form-group">
-          <label for="insuranceType">Insurance Branch <span class="required">*</span></label>
-          <select id="insuranceType" formControlName="insuranceType" class="form-control">
+          <label for="insuranceBranch">Insurance Branch</label>
+          <select id="insuranceBranch" formControlName="insuranceBranch" class="form-control">
             <option value="">-- Select Insurance Branch --</option>
-            <option *ngFor="let type of insuranceTypes" [value]="type">{{ type }}</option>
+            <option *ngFor="let b of insuranceBranches" [value]="b">{{ b }}</option>
           </select>
-          <div class="error-message" *ngIf="form.get('insuranceType')?.touched && form.get('insuranceType')?.invalid">
-            {{ getErrorMessage('insuranceType') }}
-          </div>
         </div>
 
         <!-- Company Name -->
@@ -172,9 +169,14 @@
           </div>
         </div>
 
-        
-
-        
+        <!-- Insurance Type -->
+        <div class="form-group">
+          <label for="insuranceType">Insurance Type</label>
+          <select id="insuranceType" formControlName="insuranceType" class="form-control">
+            <option value="">-- Select Insurance Type --</option>
+            <option *ngFor="let type of insuranceTypes" [value]="type">{{ type }}</option>
+          </select>
+        </div>
 
         <!-- Product Name -->
         <div class="form-group">
@@ -369,7 +371,7 @@
 
         <!-- Registration Number -->
         <div class="form-group">
-          <label for="registrationNumber">Registration Number <span class="required">*</span></label>
+          <label for="registrationNumber">Registration Number</label>
           <input type="text" id="registrationNumber" formControlName="registrationNumber" class="form-control" 
                  placeholder="Enter registration number">
           <div class="error-message" *ngIf="form.get('registrationNumber')?.touched && form.get('registrationNumber')?.invalid">
@@ -379,7 +381,7 @@
 
         <!-- Make -->
         <div class="form-group">
-          <label for="make">Make <span class="required">*</span></label>
+          <label for="make">Make</label>
           <select id="make" formControlName="make" class="form-control">
             <option value="" disabled selected>Select Vehicle Make</option>
             <option *ngFor="let m of vehicleMakes" [value]="m">{{ m }}</option>
@@ -391,7 +393,7 @@
 
         <!-- Model -->
         <div class="form-group">
-          <label for="model">Model <span class="required">*</span></label>
+          <label for="model">Model</label>
           <select id="model" formControlName="model" class="form-control">
             <option value="" disabled selected>Select Vehicle Model</option>
             <option *ngFor="let mod of vehicleModels" [value]="mod">{{ mod }}</option>
@@ -463,8 +465,8 @@
                 <td>{{ doc.uploadDate }}</td>
                 <td>
                   <button type="button" class="btn-icon btn-download" (click)="viewDocument(doc)" title="Download Document">
-                    <i class="icon-download">⬇️</i>
-                  </button>
+                        <i class="icon-download">⬇️</i>
+                      </button>
                   <button type="button" class="btn-icon btn-delete" (click)="removeDocument(doc.id)" title="Delete">
                     <i class="icon-delete">🗑️</i>
                   </button>

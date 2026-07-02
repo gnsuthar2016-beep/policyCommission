@@ -20,6 +20,7 @@ export class MiscMasterComponent implements OnInit {
     'Reference Name',
     'Company Name',
     'Insurance Type',
+    'Insurance Branch',
     'Product Name',
     'Vehicle Make',
     'Vehicle Model',

@@ -32,13 +32,17 @@ const Policy = sequelize.define('Policy', {
     type: DataTypes.STRING,
     allowNull: false
   },
+  insuranceBranch: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   companyName: {
     type: DataTypes.STRING,
     allowNull: false
   },
   insuranceType: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   productName: {
     type: DataTypes.STRING,

@@ -15,6 +15,8 @@ const { fixCustomerNameColumn } = require('./migrations/fix-customer-name');
 const { addPremiumSourceColumn } = require('./migrations/add-premium-source');
 const { addPolicyNumberUniqueConstraint } = require('./migrations/add-policy-number-unique');
 const { repairCustomerSchema } = require('./migrations/repair-customer-schema');
+const { makeInsuranceTypeNullable } = require('./migrations/insurance-type-nullable');
+const { addInsuranceBranchColumn } = require('./migrations/add-insurance-branch-column');
 const policyRoutes = require('./routes/policyRoutes');
 const miscMasterRoutes = require('./routes/miscMasterRoutes');
 const customerRoutes = require('./routes/customerRoutes');
@@ -49,6 +51,8 @@ async function initializeDatabase() {
     await addPremiumSourceColumn();
     await addPolicyNumberUniqueConstraint();
     await repairCustomerSchema();
+    await makeInsuranceTypeNullable();
+    await addInsuranceBranchColumn();
 
     await sequelize.sync({ alter: true });
     console.log('✓ Database tables synced successfully');

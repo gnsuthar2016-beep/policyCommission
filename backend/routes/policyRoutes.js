@@ -328,7 +328,8 @@ router.post('/api/policy', async (req, res) => {
       policyNumber: policyData.policyNumber,
       referenceName: policyData.referenceName,
       companyName: policyData.companyName,
-      insuranceType: policyData.insuranceType,
+      insuranceBranch: policyData.insuranceBranch && String(policyData.insuranceBranch).trim() !== '' ? policyData.insuranceBranch : null,
+      insuranceType: policyData.insuranceType && String(policyData.insuranceType).trim() !== '' ? policyData.insuranceType : null,
       productName: policyData.productName,
       periodFrom: parseDate(policyData.periodFrom),
       periodTo: parseDate(policyData.periodTo),
@@ -345,9 +346,9 @@ router.post('/api/policy', async (req, res) => {
       refBrokeragePercent: policyData.refBrokeragePercent || null,
       refBrokerageAmount: policyData.refBrokerageAmount || null,
       totalIDV: policyData.totalIDV,
-      make: policyData.make,
-      model: policyData.model,
-      registrationNumber: policyData.registrationNumber
+      make: policyData.make && String(policyData.make).trim() !== '' ? policyData.make : null,
+      model: policyData.model && String(policyData.model).trim() !== '' ? policyData.model : null,
+      registrationNumber: policyData.registrationNumber && String(policyData.registrationNumber).trim() !== '' ? policyData.registrationNumber : null
     });
 
     // If documents are provided, create them
@@ -647,7 +648,8 @@ router.put('/api/policy/:id', async (req, res) => {
       policyNumber: policyData.policyNumber,
       referenceName: policyData.referenceName,
       companyName: policyData.companyName,
-      insuranceType: policyData.insuranceType,
+      insuranceBranch: policyData.insuranceBranch && String(policyData.insuranceBranch).trim() !== '' ? policyData.insuranceBranch : null,
+      insuranceType: policyData.insuranceType && String(policyData.insuranceType).trim() !== '' ? policyData.insuranceType : null,
       productName: policyData.productName,
       periodFrom: parseDate(policyData.periodFrom),
       periodTo: parseDate(policyData.periodTo),
@@ -664,9 +666,9 @@ router.put('/api/policy/:id', async (req, res) => {
       refBrokeragePercent: policyData.refBrokeragePercent || null,
       refBrokerageAmount: policyData.refBrokerageAmount || null,
       totalIDV: policyData.totalIDV,
-      make: policyData.make,
-      model: policyData.model,
-      registrationNumber: policyData.registrationNumber
+      make: policyData.make && String(policyData.make).trim() !== '' ? policyData.make : null,
+      model: policyData.model && String(policyData.model).trim() !== '' ? policyData.model : null,
+      registrationNumber: policyData.registrationNumber && String(policyData.registrationNumber).trim() !== '' ? policyData.registrationNumber : null
     });
 
     res.status(200).json({

@@ -34,6 +34,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   referenceNames: any[] = [];
   companyNames: any[] = [];
   insuranceTypes: any[] = [];
+  insuranceBranches: any[] = [];
   productNames: any[] = [];
   vehicleMakes: any[] = [];
   vehicleModels: any[] = [];
@@ -47,6 +48,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   filteredReferenceNames: any[] = [];
   showCustomerDropdown = false;
   showReferenceDropdown = false;
+  periodToAutoFilled = false;
 
   constructor(
     private fb: FormBuilder,
@@ -216,6 +218,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       { property: 'policyTypes', type: 'Policy Type' },
       { property: 'companyNames', type: 'Company Name' },
       { property: 'insuranceTypes', type: 'Insurance Type' },
+      { property: 'insuranceBranches', type: 'Insurance Branch' },
       { property: 'productNames', type: 'Product Name' },
       { property: 'vehicleMakes', type: 'Vehicle Make' },
       { property: 'vehicleModels', type: 'Vehicle Model' },
@@ -340,9 +343,10 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       customerName: ['', Validators.required],
       policyType: ['', Validators.required],
       policyNumber: ['', [Validators.required, Validators.minLength(5)]],
+      insuranceBranch: [''],
       referenceName: ['', Validators.required],
       companyName: ['', Validators.required],
-      insuranceType: ['', Validators.required],
+      insuranceType: [''],
       productName: ['', Validators.required],
       periodFrom: ['', Validators.required],
       periodTo: ['', Validators.required],
@@ -359,9 +363,9 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       refBrokeragePercent: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       refBrokerageAmount: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       totalIDV: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      make: ['', Validators.required],
-      model: ['', Validators.required],
-      registrationNumber: ['', Validators.required]
+      make: [''],
+      model: [''],
+      registrationNumber: ['']
     });
   }
 
@@ -1040,6 +1044,22 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     }
   }
 
+  private calculateOneYearLater(dateValue: any): string | null {
+    if (!dateValue) {
+      return null;
+    }
+
+    const date = new Date(dateValue);
+    if (isNaN(date.getTime())) {
+      return null;
+    }
+
+    const nextYear = new Date(date);
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+
+    return this.formatDateForInput(nextYear);
+  }
+
   /**
    * Calculate and update Ref. Brokerage Amount
    * Formula: Ref. Brokerage Amount = Ref. Brokerage On (Selected Premium) × Ref Brokerage% / 100
@@ -1076,6 +1096,26 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
         // Recalculate Ref. Brokerage Amount when Net Premium changes
         this.calculateRefBrokerageAmount();
       });
+    });
+
+    // Auto-fill Period To when Period From changes and Period To is empty or previously auto-filled
+    this.form.get('periodFrom')?.valueChanges.subscribe((value) => {
+      const periodToControl = this.form.get('periodTo');
+      const currentPeriodTo = periodToControl?.value;
+      const computedPeriodTo = this.calculateOneYearLater(value);
+
+      if (!computedPeriodTo) {
+        return;
+      }
+
+      if (!currentPeriodTo || currentPeriodTo === '' || this.periodToAutoFilled) {
+        periodToControl?.patchValue(computedPeriodTo, { emitEvent: false });
+        this.periodToAutoFilled = true;
+      }
+    });
+
+    this.form.get('periodTo')?.valueChanges.subscribe(() => {
+      this.periodToAutoFilled = false;
     });
 
     // Watch for changes in GST % to update GST Amount and Final Premium
