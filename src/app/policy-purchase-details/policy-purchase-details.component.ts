@@ -648,8 +648,8 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       return;
     }
 
-    if (file.size > 1 * 1024 * 1024) {
-      this.documentUploadError = 'Maximum file size is 1MB.';
+    if (file.size > 5 * 1024 * 1024) {
+      this.documentUploadError = 'Maximum file size is 5MB.';
       return;
     }
 
@@ -1056,6 +1056,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
 
     const nextYear = new Date(date);
     nextYear.setFullYear(nextYear.getFullYear() + 1);
+    nextYear.setDate(nextYear.getDate() - 1);
 
     return this.formatDateForInput(nextYear);
   }

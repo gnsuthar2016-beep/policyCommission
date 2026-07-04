@@ -34,7 +34,7 @@ if (process.env.CLOUDINARY_URL) {
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 1 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedMimeTypes = [
       'application/pdf',
@@ -521,7 +521,7 @@ router.post('/api/policy/:id/document', (req, res, next) => {
         return res.status(400).json({
           success: false,
           message: err.code === 'LIMIT_FILE_SIZE'
-            ? 'File size must be 1MB or less'
+            ? 'File size must be 5MB or less'
             : err.message
         });
       }

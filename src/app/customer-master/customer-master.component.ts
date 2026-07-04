@@ -265,8 +265,8 @@ export class CustomerMasterComponent implements OnInit {
       return;
     }
 
-    if (file.size > 1 * 1024 * 1024) {
-      this.documentUploadError = 'Maximum file size is 1MB.';
+    if (file.size > 5 * 1024 * 1024) {
+      this.documentUploadError = 'Maximum file size is 5MB.';
       return;
     }
 
