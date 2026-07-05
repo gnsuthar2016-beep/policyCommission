@@ -22,6 +22,7 @@ const miscMasterRoutes = require('./routes/miscMasterRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const referenceRoutes = require('./routes/referenceRoutes');
 const documentAiRoutes = require('./routes/documentAiRoutes');
+const llamaExtractRoute = require('./routes/llamaExtractRoute');
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ app.use(miscMasterRoutes);
 app.use(customerRoutes);
 app.use(referenceRoutes);
 app.use(documentAiRoutes);
+app.use(llamaExtractRoute);
 
 // Database connection
 async function initializeDatabase() {
