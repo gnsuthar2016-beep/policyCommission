@@ -86,7 +86,7 @@ Email: admin@example.com | Password: admin123
 npm run dev
 ```
 
-The server will connect to PostgreSQL and run on `http://localhost:3000`
+The server will connect to PostgreSQL and run on `https://policy-api.alluresofttech.com`
 
 ## Database Structure
 
@@ -139,8 +139,8 @@ SELECT * FROM users;
 
 Now your Express API uses PostgreSQL:
 
-- **Login:** `POST http://localhost:3000/api/login`
-- **Health Check:** `GET http://localhost:3000/api/health`
+- **Login:** `POST https://policy-api.alluresofttech.com/api/login`
+- **Health Check:** `GET https://policy-api.alluresofttech.com/api/health`
 
 Passwords are securely hashed using bcryptjs before storing in the database.
 
