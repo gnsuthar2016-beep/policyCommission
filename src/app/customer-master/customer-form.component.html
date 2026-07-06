@@ -1,0 +1,72 @@
+<div class="customer-form-container">
+  <div class="form-card">
+    <div class="form-header">
+      <h2>{{ isEditMode ? 'Edit Customer' : 'Add New Customer' }}</h2>
+      <button class="btn btn-secondary" type="button" (click)="cancel()">Back to Customer List</button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="form-group">
+        <label for="name">Name <span class="required">*</span></label>
+        <input id="name" type="text" formControlName="name" class="form-control" placeholder="Enter customer name" [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched" />
+        <div class="error-message" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">{{ getErrorMessage('name') }}</div>
+      </div>
+
+      <div class="form-group">
+        <label for="mobileNumber">Mobile Number <span class="required">*</span></label>
+        <input id="mobileNumber" type="tel" formControlName="mobileNumber" class="form-control" placeholder="Enter 10-digit mobile number" [class.is-invalid]="form.get('mobileNumber')?.invalid && form.get('mobileNumber')?.touched" />
+        <div class="error-message" *ngIf="form.get('mobileNumber')?.invalid && form.get('mobileNumber')?.touched">{{ getErrorMessage('mobileNumber') }}</div>
+      </div>
+
+      <div class="form-group">
+        <label for="alternativeMobileNumber">Alternative Mobile Number</label>
+        <input id="alternativeMobileNumber" type="tel" formControlName="alternativeMobileNumber" class="form-control" placeholder="Enter 10-digit alternative mobile number" [class.is-invalid]="form.get('alternativeMobileNumber')?.invalid && form.get('alternativeMobileNumber')?.touched" />
+        <div class="error-message" *ngIf="form.get('alternativeMobileNumber')?.invalid && form.get('alternativeMobileNumber')?.touched">{{ getErrorMessage('alternativeMobileNumber') }}</div>
+      </div>
+
+      <div class="form-group">
+        <label for="emailId">Email ID</label>
+        <input id="emailId" type="email" formControlName="emailId" class="form-control" placeholder="Enter email address" [class.is-invalid]="form.get('emailId')?.invalid && form.get('emailId')?.touched" />
+        <div class="error-message" *ngIf="form.get('emailId')?.invalid && form.get('emailId')?.touched">{{ getErrorMessage('emailId') }}</div>
+      </div>
+
+      <div class="form-group">
+        <label for="dateOfBirth">Date of Birth</label>
+        <input id="dateOfBirth" type="date" formControlName="dateOfBirth" class="form-control" [class.is-invalid]="form.get('dateOfBirth')?.invalid && form.get('dateOfBirth')?.touched" />
+      </div>
+
+      <div class="form-group">
+        <label for="remark">Remark</label>
+        <textarea id="remark" formControlName="remark" class="form-control" placeholder="Enter any remarks" rows="4"></textarea>
+      </div>
+
+      <div class="import-section" *ngIf="!isEditMode">
+        <h3>Import Customers from Excel</h3>
+        <p>Upload an Excel file (.xlsx or .xls) to add customers in bulk.</p>
+        <div class="import-actions">
+          <label class="excel-file-picker">
+            <span>Choose Excel file</span>
+            <input type="file" #customerExcelInput accept=".xlsx,.xls" />
+          </label>
+          <button type="button" class="btn btn-secondary upload-import-button" (click)="importCustomers(customerExcelInput.files)" [disabled]="customerImportLoading">
+            <span *ngIf="customerImportLoading" class="spinner"></span>
+            {{ customerImportLoading ? 'Importing...' : 'Upload and Import' }}
+          </button>
+        </div>
+        <div class="import-error-list" *ngIf="customerImportErrors.length > 0">
+          <div class="import-error-item" *ngFor="let error of customerImportErrors">
+            {{ error }}
+          </div>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="submit" class="btn btn-primary" [disabled]="loading">
+          <span *ngIf="loading" class="spinner"></span>
+          {{ isEditMode ? 'Update Customer' : 'Save Customer' }}
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="cancel()" [disabled]="loading">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>

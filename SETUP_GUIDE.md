@@ -22,7 +22,7 @@ From the `backend` folder:
 ```bash
 npm run dev
 ```
-Server will run on `https://policy-api.alluresofttech.com`
+Server will run on `http://localhost:3000`
 
 ### Step 4: Run Frontend (in a new terminal)
 From the root folder:
@@ -53,7 +53,7 @@ Application will run on `http://localhost:4200`
 
 The login flow works as follows:
 1. User enters email and password in the login form
-2. Angular AuthService sends POST request to `https://policy-api.alluresofttech.com/api/login`
+2. Angular AuthService sends POST request to `http://localhost:3000/api/login`
 3. Backend validates credentials and returns response
 4. On success, user data is stored in localStorage
 5. User is redirected to dashboard

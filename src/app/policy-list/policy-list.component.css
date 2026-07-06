@@ -86,6 +86,8 @@
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding-bottom: 20px;
+
 }
 
 .policies-table {
@@ -216,6 +218,47 @@
   transition: all 0.2s ease;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 20px 0 0;
+}
+
+.page-button {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.page-button:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.page-button.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.page-button.ellipsis {
+  cursor: default;
+  background: transparent;
+  border-color: transparent;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+.page-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-view {

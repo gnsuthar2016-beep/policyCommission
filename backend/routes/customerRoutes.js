@@ -225,9 +225,54 @@ router.post('/api/customer', async (req, res) => {
   }
 });
 
-// Get all Customers
+// Get all Customers or search/paginated customers
 router.get('/api/customer', async (req, res) => {
   try {
+    const search = req.query.search ? String(req.query.search).trim() : '';
+    const page = req.query.page ? parseInt(req.query.page, 10) : null;
+    const limit = req.query.limit ? parseInt(req.query.limit, 10) : null;
+    const offset = page && limit ? (page - 1) * limit : null;
+
+    const where = {};
+    if (search) {
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { mobileNumber: { [Op.iLike]: `%${search}%` } },
+        { alternativeMobileNumber: { [Op.iLike]: `%${search}%` } },
+        { emailId: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    if (page != null || limit != null || search) {
+      const queryOptions = {
+        where,
+        include: [
+          {
+            model: CustomerDocument,
+            as: 'documents',
+            attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate', 'filePath', 'cloudinaryPublicId']
+          }
+        ],
+        order: [['createdAt', 'DESC']]
+      };
+
+      if (limit != null) {
+        queryOptions.limit = limit;
+      }
+      if (offset != null) {
+        queryOptions.offset = offset;
+      }
+
+      const result = await Customer.findAndCountAll(queryOptions);
+      return res.status(200).json({
+        success: true,
+        data: result.rows,
+        count: result.count,
+        page: page || 1,
+        limit: limit || result.count
+      });
+    }
+
     const customers = await Customer.findAll({
       include: [
         {

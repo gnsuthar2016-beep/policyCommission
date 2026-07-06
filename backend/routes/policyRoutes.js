@@ -431,19 +431,42 @@ router.get('/api/policy/:id', async (req, res) => {
 // Get All Policies with Documents
 router.get('/api/policies', async (req, res) => {
   try {
-    // Query only policies with valid customer names (not N/A, not null, not empty)
-    const policies = await Policy.findAll({
-      where: {
-        [Op.and]: [
-          sequelize.where(sequelize.col('customerName'), Op.ne, 'N/A'),
-          sequelize.where(sequelize.col('customerName'), Op.ne, null),
-          sequelize.where(
-            sequelize.fn('TRIM', sequelize.col('customerName')), 
-            Op.ne, 
-            ''
-          )
-        ]
-      },
+    const page = parseInt(req.query.page, 10);
+    const limit = parseInt(req.query.limit, 10);
+    const search = req.query.search ? String(req.query.search).trim() : '';
+    const safePage = Number.isInteger(page) && page > 0 ? page : 1;
+    const safeLimit = Number.isInteger(limit) && limit > 0 ? limit : 10;
+    const offset = (safePage - 1) * safeLimit;
+
+    const validCustomerClause = {
+      [Op.and]: [
+        sequelize.where(sequelize.col('customerName'), Op.ne, 'N/A'),
+        sequelize.where(sequelize.col('customerName'), Op.ne, null),
+        sequelize.where(sequelize.fn('TRIM', sequelize.col('customerName')), Op.ne, '')
+      ]
+    };
+
+    const where = search
+      ? {
+          [Op.and]: [
+            validCustomerClause,
+            {
+              [Op.or]: [
+                { customerName: { [Op.iLike]: `%${search}%` } },
+                { policyNumber: { [Op.iLike]: `%${search}%` } },
+                { registrationNumber: { [Op.iLike]: `%${search}%` } },
+                { companyName: { [Op.iLike]: `%${search}%` } },
+                { policyType: { [Op.iLike]: `%${search}%` } },
+                { referenceName: { [Op.iLike]: `%${search}%` } },
+                { productName: { [Op.iLike]: `%${search}%` } }
+              ]
+            }
+          ]
+        }
+      : validCustomerClause;
+
+    const { count, rows } = await Policy.findAndCountAll({
+      where,
       include: [
         {
           model: Document,
@@ -451,14 +474,19 @@ router.get('/api/policies', async (req, res) => {
           attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate', 'filePath', 'cloudinaryPublicId']
         }
       ],
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
+      limit: safeLimit,
+      offset
     });
 
     res.status(200).json({
       success: true,
       message: 'Policies fetched successfully',
-      count: policies.length,
-      data: policies
+      count,
+      totalPages: Math.max(1, Math.ceil(count / safeLimit)),
+      page: safePage,
+      limit: safeLimit,
+      data: rows
     });
   } catch (error) {
     console.error('Error fetching policies:', error);

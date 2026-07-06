@@ -13,6 +13,11 @@ export class PolicyListComponent implements OnInit {
   error: string | null = null;
   showSearchPanel = false;
   isSearchActive = false;
+  page = 1;
+  limit = 10;
+  totalItems = 0;
+  totalPages = 1;
+  activeSearch = '';
   
   // Search form model
   searchForm = {
@@ -29,17 +34,31 @@ export class PolicyListComponent implements OnInit {
   }
 
   loadPolicies(): void {
+    this.page = 1;
+    this.activeSearch = '';
+    this.fetchPolicies(1, '');
+  }
+
+  fetchPolicies(page: number, searchText: string): void {
     this.loading = true;
     this.error = null;
-    
-    this.policyService.getAllPolicies().subscribe({
+
+    this.policyService.getPolicies(page, this.limit, searchText).subscribe({
       next: (response) => {
         this.loading = false;
         if (response.success) {
           this.policies = response.data || [];
-          this.isSearchActive = false;
+          this.totalItems = response.count ?? this.policies.length;
+          this.page = response.page ?? page;
+          this.limit = response.limit ?? this.limit;
+          this.totalPages = response.totalPages ?? (this.limit ? Math.max(1, Math.ceil(this.totalItems / this.limit)) : 1);
+          this.isSearchActive = this.activeSearch !== '';
+          this.error = this.policies.length === 0 && this.activeSearch ? 'No policies found matching your search criteria.' : null;
         } else {
           this.error = response.message || 'Failed to load policies';
+          this.policies = [];
+          this.totalItems = 0;
+          this.totalPages = 1;
         }
       },
       error: (error) => {
@@ -74,25 +93,14 @@ export class PolicyListComponent implements OnInit {
       mobileNumber: this.searchForm.mobileNumber.trim() || null
     };
 
-    this.policyService.searchPolicies(searchCriteria).subscribe({
-      next: (response) => {
-        this.loading = false;
-        if (response.success) {
-          this.policies = response.data || [];
-          this.isSearchActive = true;
-          if (this.policies.length === 0) {
-            this.error = 'No policies found matching your search criteria.';
-          }
-        } else {
-          this.error = response.message || 'Failed to search policies';
-        }
-      },
-      error: (error) => {
-        this.loading = false;
-        this.error = 'Error searching policies. Please try again.';
-        console.error('Error searching policies:', error);
-      }
-    });
+    const searchText = Object.values(searchCriteria)
+      .filter((value: unknown): value is string => typeof value === 'string')
+      .map((value: string) => value.trim())
+      .filter((value: string) => value.length > 0)
+      .join(' ');
+
+    this.activeSearch = searchText;
+    this.fetchPolicies(1, searchText);
   }
 
   resetSearch(): void {
@@ -105,6 +113,47 @@ export class PolicyListComponent implements OnInit {
     this.isSearchActive = false;
     this.error = null;
     this.loadPolicies();
+  }
+
+  onPageClick(pageItem: number | string): void {
+    if (pageItem === '...') {
+      return;
+    }
+    this.changePage(pageItem as number);
+  }
+
+  changePage(newPage: number): void {
+    if (newPage < 1 || newPage > this.totalPages) {
+      return;
+    }
+    this.fetchPolicies(newPage, this.activeSearch);
+  }
+
+  get paginationRange(): Array<number | string> {
+    if (this.totalPages <= 7) {
+      return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+    }
+
+    const pages: Array<number | string> = [];
+    const left = Math.max(2, this.page - 1);
+    const right = Math.min(this.totalPages - 1, this.page + 1);
+
+    pages.push(1);
+
+    if (left > 2) {
+      pages.push('...');
+    }
+
+    for (let i = left; i <= right; i++) {
+      pages.push(i);
+    }
+
+    if (right < this.totalPages - 1) {
+      pages.push('...');
+    }
+
+    pages.push(this.totalPages);
+    return pages;
   }
 
   getSearchSummary(): string {

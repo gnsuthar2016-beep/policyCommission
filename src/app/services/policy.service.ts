@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class PolicyService {
-  private apiUrl = 'https://policy-api.alluresofttech.com/api';
+  private apiUrl = 'http://localhost:3000/api';
 
   constructor(private http: HttpClient) { }
 
@@ -25,9 +25,23 @@ export class PolicyService {
     return this.http.get(`${this.apiUrl}/policy/${id}`);
   }
 
-  // Get all policies
+  // Get all policies with optional search and pagination
   getAllPolicies(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/policies`);
+    return this.getPolicies(1, 10);
+  }
+
+  getPolicies(page?: number, limit?: number, search?: string): Observable<any> {
+    const params: any = {};
+    if (page != null) {
+      params.page = page;
+    }
+    if (limit != null) {
+      params.limit = limit;
+    }
+    if (search != null && search !== '') {
+      params.search = search;
+    }
+    return this.http.get<any>(`${this.apiUrl}/policies`, { params });
   }
 
   // Get policies by month and optional reference name
@@ -86,7 +100,12 @@ export class PolicyService {
 
   // Search policies by customer name, policy number, registration number, or mobile number
   searchPolicies(searchCriteria: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/policies/search`, searchCriteria);
+    const searchText = Object.values(searchCriteria || {})
+      .filter((value: unknown): value is string => typeof value === 'string')
+      .map((value: string) => value.trim())
+      .filter((value: string) => value.length > 0)
+      .join(' ');
+    return this.getPolicies(1, 10, searchText);
   }
 
   deletePolicy(policyId: number): Observable<any> {

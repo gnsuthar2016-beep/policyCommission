@@ -16,6 +16,7 @@ import { PolicyPurchaseDetailsComponent } from './policy-purchase-details/policy
 import { PolicyListComponent } from './policy-list/policy-list.component';
 import { MiscMasterComponent } from './misc-master/misc-master.component';
 import { CustomerMasterComponent } from './customer-master/customer-master.component';
+import { CustomerFormComponent } from './customer-master/customer-form.component';
 import { ReferenceMasterComponent } from './reference-master/reference-master.component';
 import { ReducePipe } from './pipes/reduce.pipe';
 import { LoaderComponent } from './loader/loader.component';
@@ -34,9 +35,10 @@ import { LoaderInterceptor } from './interceptors/loader.interceptor';
     PolicyListComponent,
     MiscMasterComponent,
     CustomerMasterComponent,
+    CustomerFormComponent,
     ReferenceMasterComponent,
-    ReducePipe
-    ,LoaderComponent
+    ReducePipe,
+    LoaderComponent
   ],
   imports: [
     BrowserAnimationsModule,

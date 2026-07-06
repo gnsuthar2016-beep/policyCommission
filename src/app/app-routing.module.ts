@@ -9,6 +9,7 @@ import { PolicyListComponent } from './policy-list/policy-list.component';
 import { PolicyPurchaseDetailsComponent } from './policy-purchase-details/policy-purchase-details.component';
 import { MiscMasterComponent } from './misc-master/misc-master.component';
 import { CustomerMasterComponent } from './customer-master/customer-master.component';
+import { CustomerFormComponent } from './customer-master/customer-form.component';
 import { ReferenceMasterComponent } from './reference-master/reference-master.component';
 
 const routes: Routes = [
@@ -20,6 +21,8 @@ const routes: Routes = [
   { path: 'policy-details', redirectTo: 'policies' },
   { path: 'misc-master', component: MiscMasterComponent },
   { path: 'customer-master', component: CustomerMasterComponent },
+  { path: 'customer-master/add', component: CustomerFormComponent },
+  { path: 'customer-master/edit/:id', component: CustomerFormComponent },
   { path: 'reference-master', component: ReferenceMasterComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },

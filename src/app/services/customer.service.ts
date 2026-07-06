@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class CustomerService {
-  private apiUrl = 'https://policy-api.alluresofttech.com/api';
+  private apiUrl = 'http://localhost:3000/api';
 
   constructor(private http: HttpClient) {}
 
@@ -25,6 +25,21 @@ export class CustomerService {
   // Get all Customers
   getAllCustomers(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/customer`);
+  }
+
+  // Get customers with optional pagination and search
+  getCustomers(page?: number, limit?: number, search?: string): Observable<any> {
+    const params: any = {};
+    if (page != null) {
+      params.page = page;
+    }
+    if (limit != null) {
+      params.limit = limit;
+    }
+    if (search != null && search !== '') {
+      params.search = search;
+    }
+    return this.http.get<any>(`${this.apiUrl}/customer`, { params });
   }
 
   // Get Customer by ID
