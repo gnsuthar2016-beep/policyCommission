@@ -22,9 +22,23 @@ export class ReferenceService {
     return this.http.post<any>(this.apiUrl, data);
   }
 
-  // Get all References
+  // Get References with optional pagination and search
   getAllReferences(): Observable<any> {
-    return this.http.get<any>(this.apiUrl);
+    return this.getReferences(1, 10);
+  }
+
+  getReferences(page?: number, limit?: number, search?: string): Observable<any> {
+    const params: any = {};
+    if (page != null) {
+      params.page = page;
+    }
+    if (limit != null) {
+      params.limit = limit;
+    }
+    if (search != null && search !== '') {
+      params.search = search;
+    }
+    return this.http.get<any>(this.apiUrl, { params });
   }
 
   // Get Reference by ID

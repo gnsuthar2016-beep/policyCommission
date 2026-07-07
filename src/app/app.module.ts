@@ -18,6 +18,7 @@ import { MiscMasterComponent } from './misc-master/misc-master.component';
 import { CustomerMasterComponent } from './customer-master/customer-master.component';
 import { CustomerFormComponent } from './customer-master/customer-form.component';
 import { ReferenceMasterComponent } from './reference-master/reference-master.component';
+import { ReferenceFormComponent } from './reference-master/reference-form.component';
 import { ReducePipe } from './pipes/reduce.pipe';
 import { LoaderComponent } from './loader/loader.component';
 import { LoaderInterceptor } from './interceptors/loader.interceptor';
@@ -37,6 +38,7 @@ import { LoaderInterceptor } from './interceptors/loader.interceptor';
     CustomerMasterComponent,
     CustomerFormComponent,
     ReferenceMasterComponent,
+    ReferenceFormComponent,
     ReducePipe,
     LoaderComponent
   ],

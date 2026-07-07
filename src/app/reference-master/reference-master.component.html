@@ -1,124 +1,35 @@
 <div class="reference-master-container">
-  <!-- Form Section -->
-  <div class="form-wrapper">
-    <h2>{{ isEditMode ? 'Edit Reference' : 'Add New Reference' }}</h2>
-    
-    <form [formGroup]="form" (ngSubmit)="submit()">
-      <!-- Reference Name -->
-      <div class="form-group">
-        <label for="name">Reference Name <span class="required">*</span></label>
-        <input 
-          id="name" 
-          type="text" 
-          formControlName="name" 
-          class="form-control"
-          placeholder="Enter reference name"
-          [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched">
-        <div class="error-message" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
-          {{ getErrorMessage('name') }}
-        </div>
-      </div>
-
-      <!-- Mobile Number -->
-      <div class="form-group">
-        <label for="mobileNumber">Mobile Number <span class="required">*</span></label>
-        <input 
-          id="mobileNumber" 
-          type="tel" 
-          formControlName="mobileNumber" 
-          class="form-control"
-          placeholder="Enter 10-digit mobile number"
-          [class.is-invalid]="form.get('mobileNumber')?.invalid && form.get('mobileNumber')?.touched">
-        <div class="error-message" *ngIf="form.get('mobileNumber')?.invalid && form.get('mobileNumber')?.touched">
-          {{ getErrorMessage('mobileNumber') }}
-        </div>
-      </div>
-
-      <!-- Alternative Mobile Number -->
-      <div class="form-group">
-        <label for="alternativeMobileNumber">Alternative Mobile Number</label>
-        <input 
-          id="alternativeMobileNumber" 
-          type="tel" 
-          formControlName="alternativeMobileNumber" 
-          class="form-control"
-          placeholder="Enter 10-digit alternative mobile number"
-          [class.is-invalid]="form.get('alternativeMobileNumber')?.invalid && form.get('alternativeMobileNumber')?.touched">
-        <div class="error-message" *ngIf="form.get('alternativeMobileNumber')?.invalid && form.get('alternativeMobileNumber')?.touched">
-          {{ getErrorMessage('alternativeMobileNumber') }}
-        </div>
-      </div>
-
-      <!-- Email ID -->
-      <div class="form-group">
-        <label for="emailId">Email ID</label>
-        <input 
-          id="emailId" 
-          type="email" 
-          formControlName="emailId" 
-          class="form-control"
-          placeholder="Enter email address (optional)"
-          [class.is-invalid]="form.get('emailId')?.invalid && form.get('emailId')?.touched">
-        <div class="error-message" *ngIf="form.get('emailId')?.invalid && form.get('emailId')?.touched">
-          {{ getErrorMessage('emailId') }}
-        </div>
-      </div>
-
-      <!-- Date of Birth -->
-      <div class="form-group">
-        <label for="dateOfBirth">Date of Birth</label>
-        <input 
-          id="dateOfBirth" 
-          type="date" 
-          formControlName="dateOfBirth" 
-          class="form-control"
-          [class.is-invalid]="form.get('dateOfBirth')?.invalid && form.get('dateOfBirth')?.touched">
-        <div class="error-message" *ngIf="form.get('dateOfBirth')?.invalid && form.get('dateOfBirth')?.touched">
-          {{ getErrorMessage('dateOfBirth') }}
-        </div>
-      </div>
-
-      <!-- Remark -->
-      <div class="form-group">
-        <label for="remark">Remark</label>
-        <textarea 
-          id="remark" 
-          formControlName="remark" 
-          class="form-control"
-          placeholder="Enter any remarks or notes"
-          rows="3"
-          [class.is-invalid]="form.get('remark')?.invalid && form.get('remark')?.touched"></textarea>
-        <div class="error-message" *ngIf="form.get('remark')?.invalid && form.get('remark')?.touched">
-          {{ getErrorMessage('remark') }}
-        </div>
-      </div>
-
-      <!-- Buttons -->
-      <div class="button-group">
-        <button type="submit" class="btn btn-primary" [disabled]="loading">
-          <span *ngIf="loading" class="spinner"></span>
-          {{ loading ? 'Saving...' : 'Submit' }}
-        </button>
-        <button type="button" class="btn btn-secondary" (click)="reset()" [disabled]="loading">Reset</button>
-      </div>
-    </form>
+  <div class="top-action-card">
+    <div>
+      <h2>Reference Management</h2>
+      <p>Manage reference details, search by name, mobile number, or email, and add new references.</p>
+    </div>
+    <button class="btn btn-add-new" type="button" (click)="addReference()">+ Add Reference</button>
   </div>
 
-  <!-- List Section -->
   <div class="list-wrapper">
     <div class="list-header">
-      <h3>Reference List</h3>
-      <button class="btn btn-add-new" (click)="reset()" *ngIf="isEditMode">
-        + Add New Reference
-      </button>
+      <div class="search-container">
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search by name, mobile number, or email"
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+        />
+        <button class="btn btn-secondary" type="button" (click)="onSearch()">Search</button>
+      </div>
+      <div class="list-summary">
+        <span *ngIf="totalItems > 0">Showing {{ references.length }} of {{ totalItems }} references</span>
+      </div>
     </div>
-    
+
     <div class="loading-spinner" *ngIf="loading">
       <span>Loading...</span>
     </div>
 
     <div class="no-data" *ngIf="!loading && references.length === 0">
-      <p>No references found. Add a new reference to get started.</p>
+      <p>No references found. Use search or add a new reference to get started.</p>
     </div>
 
     <div class="table-responsive" *ngIf="!loading && references.length > 0">
@@ -134,31 +45,35 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let reference of references; let i = index">
+          <tr *ngFor="let reference of references">
             <td>{{ reference.id }}</td>
             <td>{{ reference.name }}</td>
             <td>{{ reference.mobileNumber }}</td>
             <td>{{ reference.emailId }}</td>
             <td>{{ reference.createdAt | date: 'medium' }}</td>
             <td>
-              <button 
-                class="btn-edit" 
-                (click)="editReference(reference)"
-                [disabled]="loading"
-                title="Edit">
-                Edit
-              </button>
-              <button 
-                class="btn-delete" 
-                (click)="deleteReference(reference.id, reference.name)"
-                [disabled]="loading"
-                title="Delete">
-                Delete
-              </button>
+              <button class="btn-edit" type="button" (click)="editReference(reference)" [disabled]="loading">Edit</button>
+              <button class="btn-delete" type="button" (click)="deleteReference(reference.id, reference.name)" [disabled]="loading">Delete</button>
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="pagination" *ngIf="!loading && totalPages > 1">
+      <button class="page-button" type="button" [disabled]="page === 1" (click)="changePage(page - 1)">Previous</button>
+      <button
+        class="page-button"
+        *ngFor="let pageItem of paginationRange"
+        [class.active]="pageItem === page"
+        [class.ellipsis]="pageItem === '...'"
+        [disabled]="pageItem === '...'"
+        type="button"
+        (click)="onPageClick(pageItem)"
+      >
+        {{ pageItem }}
+      </button>
+      <button class="page-button" type="button" [disabled]="page === totalPages" (click)="changePage(page + 1)">Next</button>
     </div>
   </div>
 </div>

@@ -18,6 +18,7 @@ export class PolicyListComponent implements OnInit {
   totalItems = 0;
   totalPages = 1;
   activeSearch = '';
+  activeSearchCriteria: any = null;
   
   // Search form model
   searchForm = {
@@ -36,6 +37,7 @@ export class PolicyListComponent implements OnInit {
   loadPolicies(): void {
     this.page = 1;
     this.activeSearch = '';
+    this.activeSearchCriteria = null;
     this.fetchPolicies(1, '');
   }
 
@@ -43,7 +45,11 @@ export class PolicyListComponent implements OnInit {
     this.loading = true;
     this.error = null;
 
-    this.policyService.getPolicies(page, this.limit, searchText).subscribe({
+    const obs = this.activeSearchCriteria
+      ? this.policyService.searchPolicies(this.activeSearchCriteria, page, this.limit)
+      : this.policyService.getPolicies(page, this.limit, searchText);
+
+    obs.subscribe({
       next: (response) => {
         this.loading = false;
         if (response.success) {
@@ -100,6 +106,7 @@ export class PolicyListComponent implements OnInit {
       .join(' ');
 
     this.activeSearch = searchText;
+    this.activeSearchCriteria = searchCriteria;
     this.fetchPolicies(1, searchText);
   }
 
@@ -112,6 +119,7 @@ export class PolicyListComponent implements OnInit {
     };
     this.isSearchActive = false;
     this.error = null;
+    this.activeSearchCriteria = null;
     this.loadPolicies();
   }
 

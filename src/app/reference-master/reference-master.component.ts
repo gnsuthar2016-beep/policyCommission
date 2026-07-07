@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ReferenceService } from '../services/reference.service';
 
 @Component({
@@ -8,99 +8,106 @@ import { ReferenceService } from '../services/reference.service';
   styleUrls: ['./reference-master.component.css']
 })
 export class ReferenceMasterComponent implements OnInit {
-  form!: FormGroup;
   references: any[] = [];
   loading = false;
-  isEditMode = false;
-  editingReferenceId: number | null = null;
+  searchQuery = '';
+  page = 1;
+  limit = 10;
+  totalItems = 0;
+  totalPages = 1;
 
   constructor(
-    private fb: FormBuilder,
-    private referenceService: ReferenceService
+    private referenceService: ReferenceService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
-    this.initializeForm();
     this.fetchReferences();
   }
 
-  initializeForm(): void {
-    this.form = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
-      mobileNumber: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
-      alternativeMobileNumber: ['', [Validators.pattern(/^\d{10}$/)]],
-      emailId: ['', [Validators.email]],
-      dateOfBirth: ['', []],
-      remark: ['', []]
-    });
+  addReference(): void {
+    this.router.navigate(['/reference-master/add']);
   }
 
-  fetchReferences(): void {
+  editReference(reference: any): void {
+    this.router.navigate(['/reference-master/edit', reference.id]);
+  }
+
+  fetchReferences(reset = false): void {
+    if (reset) {
+      this.page = 1;
+    }
     this.loading = true;
-    this.referenceService.getAllReferences().subscribe({
+    this.referenceService.getReferences(this.page, this.limit, this.searchQuery.trim()).subscribe({
       next: (response) => {
         this.loading = false;
         if (response.success) {
-          this.references = response.data;
+          this.references = response.data || [];
+          this.totalItems = response.count ?? (response.data?.length ?? 0);
+          this.page = response.page ?? this.page;
+          this.limit = response.limit ?? this.limit;
+          this.totalPages = this.limit ? Math.max(1, Math.ceil(this.totalItems / this.limit)) : 1;
         } else {
           this.references = [];
+          this.totalItems = 0;
+          this.totalPages = 1;
         }
       },
       error: (error) => {
         this.loading = false;
         console.error('Error fetching references:', error);
         this.references = [];
+        this.totalItems = 0;
+        this.totalPages = 1;
       }
     });
   }
 
-  submit(): void {
-    if (this.form.valid) {
-      const formData = this.form.value;
-      this.loading = true;
-
-      const apiCall = this.isEditMode && this.editingReferenceId
-        ? this.referenceService.updateReference(this.editingReferenceId, formData)
-        : this.referenceService.saveReference(formData);
-
-      apiCall.subscribe({
-        next: (response) => {
-          this.loading = false;
-          if (response.success) {
-            const action = this.isEditMode ? 'updated' : 'added';
-            alert(`Reference ${action} successfully!`);
-            this.form.reset();
-            this.isEditMode = false;
-            this.editingReferenceId = null;
-            this.fetchReferences();
-          } else {
-            alert('Error: ' + response.message);
-          }
-        },
-        error: (error) => {
-          this.loading = false;
-          console.error('Error saving reference:', error);
-          alert('Error saving reference: ' + (error.error?.message || error.message));
-        }
-      });
-    } else {
-      this.form.markAllAsTouched();
-      alert('Please fill all fields correctly.');
-    }
+  onSearch(): void {
+    this.page = 1;
+    this.fetchReferences(true);
   }
 
-  editReference(reference: any): void {
-    this.isEditMode = true;
-    this.editingReferenceId = reference.id;
-    this.form.patchValue({
-      name: reference.name,
-      mobileNumber: reference.mobileNumber,
-      alternativeMobileNumber: reference.alternativeMobileNumber,
-      emailId: reference.emailId,
-      dateOfBirth: reference.dateOfBirth ? reference.dateOfBirth.split('T')[0] : '',
-      remark: reference.remark
-    });
-    window.scrollTo(0, 0);
+  changePage(newPage: number): void {
+    if (newPage < 1 || newPage > this.totalPages) {
+      return;
+    }
+    this.page = newPage;
+    this.fetchReferences();
+  }
+
+  onPageClick(pageItem: number | string): void {
+    if (pageItem === '...') {
+      return;
+    }
+    this.changePage(pageItem as number);
+  }
+
+  get paginationRange(): Array<number | string> {
+    if (this.totalPages <= 7) {
+      return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+    }
+
+    const pages: Array<number | string> = [];
+    const left = Math.max(2, this.page - 1);
+    const right = Math.min(this.totalPages - 1, this.page + 1);
+
+    pages.push(1);
+
+    if (left > 2) {
+      pages.push('...');
+    }
+
+    for (let i = left; i <= right; i++) {
+      pages.push(i);
+    }
+
+    if (right < this.totalPages - 1) {
+      pages.push('...');
+    }
+
+    pages.push(this.totalPages);
+    return pages;
   }
 
   deleteReference(id: number, name: string): void {
@@ -111,7 +118,7 @@ export class ReferenceMasterComponent implements OnInit {
           this.loading = false;
           if (response.success) {
             alert('Reference deleted successfully!');
-            this.fetchReferences();
+            this.fetchReferences(true);
           } else {
             alert('Error: ' + response.message);
           }
@@ -123,44 +130,5 @@ export class ReferenceMasterComponent implements OnInit {
         }
       });
     }
-  }
-
-  reset(): void {
-    this.form.reset();
-    this.isEditMode = false;
-    this.editingReferenceId = null;
-  }
-
-  getErrorMessage(field: string): string {
-    const control = this.form.get(field);
-    if (control?.hasError('required')) {
-      return `${this.getLabelName(field)} is required`;
-    }
-    if (control?.hasError('minlength')) {
-      const minLength = control.getError('minlength').requiredLength;
-      return `${this.getLabelName(field)} must be at least ${minLength} characters`;
-    }
-    if (control?.hasError('pattern')) {
-      if (field === 'mobileNumber') {
-        return 'Mobile number must be 10 digits';
-      }
-      return `${this.getLabelName(field)} format is invalid`;
-    }
-    if (control?.hasError('email')) {
-      return 'Email ID format is invalid';
-    }
-    return '';
-  }
-
-  getLabelName(field: string): string {
-    const labels: { [key: string]: string } = {
-      name: 'Reference Name',
-      mobileNumber: 'Mobile Number',
-      alternativeMobileNumber: 'Alternative Mobile Number',
-      emailId: 'Email ID',
-      dateOfBirth: 'Date of Birth',
-      remark: 'Remark'
-    };
-    return labels[field] || field;
   }
 }

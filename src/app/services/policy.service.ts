@@ -98,14 +98,10 @@ export class PolicyService {
     return this.http.get(`${this.apiUrl}/policies/renewal`);
   }
 
-  // Search policies by customer name, policy number, registration number, or mobile number
-  searchPolicies(searchCriteria: any): Observable<any> {
-    const searchText = Object.values(searchCriteria || {})
-      .filter((value: unknown): value is string => typeof value === 'string')
-      .map((value: string) => value.trim())
-      .filter((value: string) => value.length > 0)
-      .join(' ');
-    return this.getPolicies(1, 10, searchText);
+  // Search policies by structured criteria; supports pagination
+  searchPolicies(searchCriteria: any = {}, page: number = 1, limit: number = 10): Observable<any> {
+    const payload = { ...searchCriteria, page, limit };
+    return this.http.post<any>(`${this.apiUrl}/policies/search`, payload);
   }
 
   deletePolicy(policyId: number): Observable<any> {

@@ -102,17 +102,41 @@ router.post('/api/reference', async (req, res) => {
   }
 });
 
-// Get all References
+// Get all References with optional search and pagination
 router.get('/api/reference', async (req, res) => {
   try {
-    const references = await Reference.findAll({
-      order: [['createdAt', 'DESC']]
+    const page = parseInt(req.query.page, 10);
+    const limit = parseInt(req.query.limit, 10);
+    const search = req.query.search ? String(req.query.search).trim() : '';
+    const safePage = Number.isInteger(page) && page > 0 ? page : 1;
+    const safeLimit = Number.isInteger(limit) && limit > 0 ? limit : 10;
+    const offset = (safePage - 1) * safeLimit;
+
+    const where = search
+      ? {
+          [Op.or]: [
+            { name: { [Op.iLike]: `%${search}%` } },
+            { mobileNumber: { [Op.iLike]: `%${search}%` } },
+            { alternativeMobileNumber: { [Op.iLike]: `%${search}%` } },
+            { emailId: { [Op.iLike]: `%${search}%` } }
+          ]
+        }
+      : {};
+
+    const { count, rows } = await Reference.findAndCountAll({
+      where,
+      order: [['createdAt', 'DESC']],
+      limit: safeLimit,
+      offset
     });
 
     res.status(200).json({
       success: true,
-      data: references,
-      count: references.length
+      data: rows,
+      count,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.max(1, Math.ceil(count / safeLimit))
     });
   } catch (error) {
     console.error('Error fetching References:', error);

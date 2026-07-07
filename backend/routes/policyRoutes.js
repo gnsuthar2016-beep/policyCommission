@@ -5,6 +5,7 @@ const { v2: cloudinary } = require('cloudinary');
 const router = express.Router();
 const { QueryTypes, Op } = require('sequelize');
 const Policy = require('../models/Policy');
+const Customer = require('../models/Customer');
 const Document = require('../models/Document');
 const sequelize = require('../config/database');
 
@@ -497,6 +498,87 @@ router.get('/api/policies', async (req, res) => {
     });
   }
 });
+
+  // POST search endpoint: search policies by policy fields or by matching customers (customerName/mobileNumber)
+  router.post('/api/policies/search', async (req, res) => {
+    try {
+      const { customerName, policyNumber, registrationNumber, mobileNumber, page, limit } = req.body || {};
+      const safePage = Number.isInteger(parseInt(page, 10)) && parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+      const safeLimit = Number.isInteger(parseInt(limit, 10)) && parseInt(limit, 10) > 0 ? parseInt(limit, 10) : 10;
+      const offset = (safePage - 1) * safeLimit;
+
+      if (!customerName && !policyNumber && !registrationNumber && !mobileNumber) {
+        return res.status(400).json({ success: false, message: 'Please provide at least one search criteria' });
+      }
+
+      // If customer search fields provided, find matching customers first
+      let matchedCustomerNames = [];
+      if (customerName || mobileNumber) {
+        const orConds = [];
+        if (customerName && String(customerName).trim() !== '') {
+          orConds.push({ name: { [Op.iLike]: `%${String(customerName).trim()}%` } });
+        }
+        if (mobileNumber && String(mobileNumber).trim() !== '') {
+          orConds.push({ mobileNumber: { [Op.iLike]: `%${String(mobileNumber).trim()}%` } });
+          orConds.push({ alternativeMobileNumber: { [Op.iLike]: `%${String(mobileNumber).trim()}%` } });
+        }
+        if (orConds.length > 0) {
+          const customers = await Customer.findAll({ where: { [Op.or]: orConds }, attributes: ['name'] });
+          matchedCustomerNames = customers.map(c => c.name).filter(Boolean);
+        }
+      }
+
+      const policyOr = [];
+      if (policyNumber && String(policyNumber).trim() !== '') {
+        policyOr.push({ policyNumber: { [Op.iLike]: `%${String(policyNumber).trim()}%` } });
+      }
+      if (registrationNumber && String(registrationNumber).trim() !== '') {
+        policyOr.push({ registrationNumber: { [Op.iLike]: `%${String(registrationNumber).trim()}%` } });
+      }
+      if (matchedCustomerNames.length > 0) {
+        policyOr.push({ customerName: { [Op.in]: matchedCustomerNames } });
+      } else if (customerName && String(customerName).trim() !== '') {
+        policyOr.push({ customerName: { [Op.iLike]: `%${String(customerName).trim()}%` } });
+      }
+
+      const baseValidCustomerClause = {
+        [Op.and]: [
+          sequelize.where(sequelize.col('customerName'), Op.ne, 'N/A'),
+          sequelize.where(sequelize.col('customerName'), Op.ne, null),
+          sequelize.where(sequelize.fn('TRIM', sequelize.col('customerName')), Op.ne, '')
+        ]
+      };
+
+      const whereClause = policyOr.length > 0 ? { [Op.and]: [ { [Op.or]: policyOr }, baseValidCustomerClause ] } : baseValidCustomerClause;
+
+      const { count, rows } = await Policy.findAndCountAll({
+        where: whereClause,
+        include: [
+          {
+            model: Document,
+            as: 'documents',
+            attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate', 'filePath', 'cloudinaryPublicId']
+          }
+        ],
+        order: [['createdAt', 'DESC']],
+        limit: safeLimit,
+        offset
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Search completed successfully',
+        count,
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.max(1, Math.ceil(count / safeLimit)),
+        data: rows
+      });
+    } catch (error) {
+      console.error('Error searching policies:', error);
+      res.status(500).json({ success: false, message: 'Error searching policies', error: error.message });
+    }
+  });
 
 // Admin endpoint to view ALL policies including those with N/A customer names
 router.get('/api/policies/admin/all', async (req, res) => {

@@ -11,6 +11,7 @@ import { MiscMasterComponent } from './misc-master/misc-master.component';
 import { CustomerMasterComponent } from './customer-master/customer-master.component';
 import { CustomerFormComponent } from './customer-master/customer-form.component';
 import { ReferenceMasterComponent } from './reference-master/reference-master.component';
+import { ReferenceFormComponent } from './reference-master/reference-form.component';
 
 const routes: Routes = [
   { path: '', component: LoginComponent },
@@ -24,6 +25,8 @@ const routes: Routes = [
   { path: 'customer-master/add', component: CustomerFormComponent },
   { path: 'customer-master/edit/:id', component: CustomerFormComponent },
   { path: 'reference-master', component: ReferenceMasterComponent },
+  { path: 'reference-master/add', component: ReferenceFormComponent },
+  { path: 'reference-master/edit/:id', component: ReferenceFormComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'change-password', component: ChangePasswordComponent },
