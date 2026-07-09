@@ -23,11 +23,11 @@ export class ReferenceService {
   }
 
   // Get References with optional pagination and search
-  getAllReferences(): Observable<any> {
-    return this.getReferences(1, 10);
+  getAllReferences(fetchAll: boolean = false): Observable<any> {
+    return this.getReferences(1, fetchAll ? undefined : 10, undefined, fetchAll);
   }
 
-  getReferences(page?: number, limit?: number, search?: string): Observable<any> {
+  getReferences(page?: number, limit?: number, search?: string, fetchAll: boolean = false): Observable<any> {
     const params: any = {};
     if (page != null) {
       params.page = page;
@@ -37,6 +37,9 @@ export class ReferenceService {
     }
     if (search != null && search !== '') {
       params.search = search;
+    }
+    if (fetchAll) {
+      params.fetchAll = 'true';
     }
     return this.http.get<any>(this.apiUrl, { params });
   }

@@ -6,6 +6,7 @@ import { PolicyService } from '../services/policy.service';
 import { MiscMasterService } from '../services/misc-master.service';
 import { CustomerService } from '../services/customer.service';
 import { ReferenceService } from '../services/reference.service';
+import { PolicyDocumentExtractService } from '../services/policy-document-extract.service';
 
 @Component({
   selector: 'app-policy-purchase-details',
@@ -42,6 +43,8 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   documentTypes: any[] = [];
   policyImportErrors: string[] = [];
   policyImportLoading = false;
+  policyExtractionLoading = false;
+  submitErrorMessage = '';
 
   // Filtered options for autocomplete
   filteredCustomerNames: any[] = [];
@@ -56,6 +59,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     private miscMasterService: MiscMasterService,
     private customerService: CustomerService,
     private referenceService: ReferenceService,
+    private policyDocumentExtractService: PolicyDocumentExtractService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
@@ -192,7 +196,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   }
 
   loadReferenceNames(): void {
-    this.referenceService.getAllReferences().subscribe({
+    this.referenceService.getAllReferences(true).subscribe({
       next: (response) => {
         if (response.success && response.data && Array.isArray(response.data)) {
           // Extract just the names from references
@@ -449,6 +453,8 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
 
   // Close dropdowns when clicking outside
   submit(): void {
+    this.submitErrorMessage = '';
+
     if (this.form.valid) {
       // Prepare policy data with documents
       const formData = this.form.value;
@@ -516,18 +522,28 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
             console.log('Policy saved:', response);
             this.router.navigate(['/policies']);
           } else {
-            alert('Error saving policy: ' + response.message);
+            this.submitErrorMessage = response.message || 'Unable to save policy details. Please review the form and try again.';
           }
         },
         error: (error) => {
           console.error('Error saving policy:', error);
-          alert('Error saving policy details. Please try again.');
+          this.submitErrorMessage = this.getReadableSubmissionError(error);
         }
       });
     } else {
       this.form.markAllAsTouched();
       alert('Please fill all required fields correctly.');
     }
+  }
+
+  private getReadableSubmissionError(error: any): string {
+    if (error?.error?.message) {
+      return error.error.message;
+    }
+    if (error?.message) {
+      return error.message;
+    }
+    return 'Unable to save policy details. Please review the form and try again.';
   }
 
   cancel(): void {
@@ -625,6 +641,91 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     this.documents = [];
   }
 
+  /**
+   * Extract policy details from document and auto-fill form
+   * @param extractResponse The response from the extraction API
+   */
+  private autoFillPolicyDetailsFromExtraction(extractResponse: any): void {
+    if (!extractResponse || !extractResponse.success || !extractResponse.rawJob || !extractResponse.rawJob.extract_result) {
+      console.warn('Invalid extraction response or missing data');
+      return;
+    }
+
+    const extractedData = extractResponse.rawJob.extract_result;
+
+    // Map extracted fields to form fields
+    const fieldsToUpdate: any = {};
+
+    // Map simple text fields
+    if (extractedData.policyNumber) fieldsToUpdate.policyNumber = extractedData.policyNumber;
+    if (extractedData.companyName) fieldsToUpdate.companyName = extractedData.companyName;
+    if (extractedData.productName) fieldsToUpdate.productName = extractedData.productName;
+    if (extractedData.insuranceType) fieldsToUpdate.insuranceType = extractedData.insuranceType;
+    if (extractedData.insuranceBranch) fieldsToUpdate.insuranceBranch = extractedData.insuranceBranch;
+    if (extractedData.policyType) fieldsToUpdate.policyType = extractedData.policyType;
+    if (extractedData.make) fieldsToUpdate.make = extractedData.make;
+    if (extractedData.model) fieldsToUpdate.model = extractedData.model;
+    if (extractedData.registrationNumber) fieldsToUpdate.registrationNumber = extractedData.registrationNumber;
+
+    // Map numeric fields
+    if (extractedData.basicODPremium !== null && extractedData.basicODPremium !== undefined) {
+      fieldsToUpdate.basicODPremium = extractedData.basicODPremium;
+    }
+    if (extractedData.tpPremium !== null && extractedData.tpPremium !== undefined) {
+      fieldsToUpdate.tpPremium = extractedData.tpPremium;
+    }
+    if (extractedData.ncb !== null && extractedData.ncb !== undefined) {
+      fieldsToUpdate.ncb = extractedData.ncb;
+    }
+    if (extractedData.netPremium !== null && extractedData.netPremium !== undefined) {
+      fieldsToUpdate.netPremium = extractedData.netPremium;
+    }
+    if (extractedData.gstPercent !== null && extractedData.gstPercent !== undefined) {
+      fieldsToUpdate.gstPercent = extractedData.gstPercent;
+    }
+    if (extractedData.gstAmount !== null && extractedData.gstAmount !== undefined) {
+      fieldsToUpdate.gstAmount = extractedData.gstAmount;
+    }
+    if (extractedData.finalPremium !== null && extractedData.finalPremium !== undefined) {
+      fieldsToUpdate.finalPremium = extractedData.finalPremium;
+    }
+    if (extractedData.totalIDV !== null && extractedData.totalIDV !== undefined) {
+      fieldsToUpdate.totalIDV = extractedData.totalIDV;
+    }
+
+    // Map date fields (format to YYYY-MM-DD for date input)
+    if (extractedData.periodFrom) {
+      fieldsToUpdate.periodFrom = this.formatDateForInput(extractedData.periodFrom);
+    }
+    if (extractedData.periodTo) {
+      fieldsToUpdate.periodTo = this.formatDateForInput(extractedData.periodTo);
+      this.periodToAutoFilled = true;
+    }
+    if (extractedData.policyDate) {
+      fieldsToUpdate.policyDate = this.formatDateForInput(extractedData.policyDate);
+    }
+
+    // // Map reference name if available
+    // if (extractedData.referenceName) {
+    //   fieldsToUpdate.referenceName = extractedData.referenceName;
+    // }
+
+    // Map customer details if available
+    if (extractedData.name) {
+      fieldsToUpdate.customerName = extractedData.name;
+    }
+
+    // Update form with extracted data
+    console.log('Auto-filling form with extracted data:', fieldsToUpdate);
+    this.form.patchValue(fieldsToUpdate);
+
+    // Recalculate derived fields
+    this.calculateGstAndFinalPremium();
+    this.calculateRefBrokerageAmount();
+
+    console.log('Form auto-filled successfully from policy document');
+  }
+
   addDocument(fileInput: HTMLInputElement): void {
     this.documentUploadError = '';
 
@@ -661,6 +762,39 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       uploadDate: new Date().toLocaleString()
     };
 
+    // Check if document type is POLICY and extract details (only for NEW policies, not when editing)
+    if (documentType === 'POLICY' && !this.isEditMode) {
+      this.policyExtractionLoading = true;
+      this.documentUploadError = 'Extracting policy details from document...';
+      this.policyDocumentExtractService.extractPolicyDetails(file).subscribe({
+        next: (response) => {
+          this.policyExtractionLoading = false;
+          if (response && response.success) {
+            // Auto-fill the form with extracted data
+            this.autoFillPolicyDetailsFromExtraction(response);
+            this.documentUploadError = '';
+
+            // For new policy, just add to documents list
+            documentEntry.file = file;
+            this.documents.push(documentEntry);
+            this.documentForm.reset();
+            fileInput.value = '';
+          } else {
+            this.policyExtractionLoading = false;
+            this.documentUploadError = 'Failed to extract policy details. Please check the document and try again.';
+            console.error('Extraction failed:', response);
+          }
+        },
+        error: (error) => {
+          this.policyExtractionLoading = false;
+          this.documentUploadError = 'Error extracting policy details: ' + (error.error?.message || error.message || 'Please try again');
+          console.error('Error extracting policy details:', error);
+        }
+      });
+      return;
+    }
+
+    // For non-POLICY documents or POLICY documents in edit mode, proceed with normal upload
     if (this.isEditMode && this.policyId) {
       const formData = new FormData();
       formData.append('documentType', documentType);

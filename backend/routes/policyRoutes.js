@@ -301,6 +301,65 @@ const validateCustomerName = (customerName) => {
   return true;
 };
 
+const formatPolicyErrorMessage = (error) => {
+  if (error?.name === 'SequelizeValidationError' && Array.isArray(error.errors)) {
+    const messages = error.errors
+      .map((validationError) => {
+        const field = validationError.path || validationError.field || 'field';
+        const message = validationError.message || '';
+        const normalizedField = field === 'customerName'
+          ? 'Customer name'
+          : field === 'policyNumber'
+            ? 'Policy number'
+            : field === 'policyType'
+              ? 'Policy type'
+              : field === 'referenceName'
+                ? 'Reference name'
+                : field === 'companyName'
+                  ? 'Company name'
+                  : field === 'productName'
+                    ? 'Product name'
+                    : field === 'periodFrom' || field === 'periodTo'
+                      ? 'Policy period'
+                      : field;
+
+        if (field === 'customerName') {
+          return 'Please provide a valid customer name. N/A is not accepted.';
+        }
+        if (field === 'policyNumber' && message.toLowerCase().includes('unique')) {
+          return 'Policy number already exists. Please use a different policy number.';
+        }
+        if (message.toLowerCase().includes('cannot be null') || message.toLowerCase().includes('notnull')) {
+          return `Please enter a valid ${normalizedField.toLowerCase()}.`;
+        }
+        if (message.toLowerCase().includes('must be unique')) {
+          return `${normalizedField} already exists. Please use a different value.`;
+        }
+        return `${normalizedField}: ${message}`;
+      })
+      .filter(Boolean);
+
+    return messages.join(' ');
+  }
+
+  if (error?.name === 'SequelizeUniqueConstraintError') {
+    return 'Policy number already exists. Please use a different policy number.';
+  }
+
+  if (error?.message) {
+    const message = String(error.message);
+    if (message.includes('Validation error')) {
+      return 'Please review the entered policy details and correct any invalid values.';
+    }
+    if (message.includes('duplicate key') || message.includes('unique')) {
+      return 'Policy number already exists. Please use a different policy number.';
+    }
+    return message;
+  }
+
+  return 'Unable to save policy details. Please review the entered values and try again.';
+};
+
 // Save Policy Details
 router.post('/api/policy', async (req, res) => {
   try {
@@ -374,10 +433,13 @@ router.post('/api/policy', async (req, res) => {
     });
   } catch (error) {
     console.error('Error saving policy:', error);
-    res.status(500).json({
+    const friendlyMessage = formatPolicyErrorMessage(error);
+    const statusCode = error?.name === 'SequelizeValidationError' || error?.name === 'SequelizeUniqueConstraintError' ? 400 : 500;
+
+    res.status(statusCode).json({
       success: false,
-      message: 'Error saving policy details',
-      error: error.message
+      message: friendlyMessage,
+      error: friendlyMessage
     });
   }
 });
@@ -789,10 +851,13 @@ router.put('/api/policy/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating policy:', error);
-    res.status(500).json({
+    const friendlyMessage = formatPolicyErrorMessage(error);
+    const statusCode = error?.name === 'SequelizeValidationError' || error?.name === 'SequelizeUniqueConstraintError' ? 400 : 500;
+
+    res.status(statusCode).json({
       success: false,
-      message: 'Error updating policy details',
-      error: error.message
+      message: friendlyMessage,
+      error: friendlyMessage
     });
   }
 });

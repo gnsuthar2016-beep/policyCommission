@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { Op } = require('sequelize');
 const Reference = require('../models/Reference');
 
 // Save Reference
@@ -105,6 +106,7 @@ router.post('/api/reference', async (req, res) => {
 // Get all References with optional search and pagination
 router.get('/api/reference', async (req, res) => {
   try {
+    const fetchAll = req.query.fetchAll === 'true';
     const page = parseInt(req.query.page, 10);
     const limit = parseInt(req.query.limit, 10);
     const search = req.query.search ? String(req.query.search).trim() : '';
@@ -122,6 +124,22 @@ router.get('/api/reference', async (req, res) => {
           ]
         }
       : {};
+
+    if (fetchAll) {
+      const rows = await Reference.findAll({
+        where,
+        order: [['createdAt', 'DESC']]
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: rows,
+        count: rows.length,
+        page: 1,
+        limit: rows.length,
+        totalPages: 1
+      });
+    }
 
     const { count, rows } = await Reference.findAndCountAll({
       where,

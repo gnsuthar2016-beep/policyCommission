@@ -433,11 +433,13 @@
 
           <!-- Upload Button -->
           <div class="form-group upload-button-group">
-            <button type="button" class="btn btn-success" (click)="addDocument(fileInput)">
-              Upload Document
+            <button type="button" class="btn btn-success" (click)="addDocument(fileInput)" [disabled]="policyExtractionLoading">
+              <span *ngIf="policyExtractionLoading" class="spinner"></span>
+              {{ policyExtractionLoading ? 'Processing...' : 'Upload Document' }}
             </button>
           </div>
-          <div class="error-message" *ngIf="documentUploadError">
+          <div [ngClass]="{'error-message': !policyExtractionLoading, 'info-message': policyExtractionLoading}" *ngIf="documentUploadError">
+            <span *ngIf="policyExtractionLoading" class="spinner-small"></span>
             {{ documentUploadError }}
           </div>
         </div>
@@ -484,6 +486,11 @@
     </div>
 
     <!-- Form Actions -->
+    <div class="submission-error-message" *ngIf="submitErrorMessage">
+      <span class="error-icon">⚠️</span>
+      <span>{{ submitErrorMessage }}</span>
+    </div>
+
     <div class="form-actions">
       <button type="submit" class="btn btn-primary">
         {{ isEditMode ? 'Update Policy' : 'Save Policy' }}
