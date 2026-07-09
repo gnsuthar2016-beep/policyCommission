@@ -359,6 +359,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       tpPremium: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       ncb: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       netPremium: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      discount: [0, [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       gstPercent: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       gstAmount: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       finalPremium: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
@@ -499,6 +500,9 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
         periodTo: formatDateToISO(formData.periodTo),
         policyDate: formatDateToISO(formData.policyDate)
       };
+
+      // Map discount field to premiumDiscount expected by backend
+      policyPayload.premiumDiscount = formData.discount != null ? Number(formData.discount) : 0;
       
       console.log('Complete Payload Being Sent to API:', policyPayload);
       console.log('premiumSource in Payload:', policyPayload.premiumSource);
@@ -645,11 +649,34 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
    * Extract policy details from document and auto-fill form
    * @param extractResponse The response from the extraction API
    */
+  private clearFormFieldsBeforeAutoFill(): void {
+    // Clear all editable premium and vehicle detail fields before auto-filling
+    const fieldsToClear = [
+      'basicODPremium', 'tpPremium', 'ncb', 'netPremium', 'discount',
+      'gstPercent', 'gstAmount', 'finalPremium', 'totalIDV',
+      'make', 'model', 'registrationNumber',
+      'policyNumber', 'companyName', 'productName', 'insuranceType',
+      'insuranceBranch', 'policyType', 'periodFrom', 'periodTo', 'policyDate'
+    ];
+    
+    fieldsToClear.forEach(field => {
+      const control = this.form.get(field);
+      if (control) {
+        control.reset('');
+      }
+    });
+    
+    console.log('Form fields cleared before auto-fill');
+  }
+
   private autoFillPolicyDetailsFromExtraction(extractResponse: any): void {
     if (!extractResponse || !extractResponse.success || !extractResponse.rawJob || !extractResponse.rawJob.extract_result) {
       console.warn('Invalid extraction response or missing data');
       return;
     }
+
+    // Clear fields before auto-filling
+    this.clearFormFieldsBeforeAutoFill();
 
     const extractedData = extractResponse.rawJob.extract_result;
 
@@ -693,6 +720,17 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       fieldsToUpdate.totalIDV = extractedData.totalIDV;
     }
 
+    // Map premium discount if provided by extraction
+    if (extractedData.premiumDiscount !== null && extractedData.premiumDiscount !== undefined) {
+      // Convert strings to numbers safely
+      const disc = typeof extractedData.premiumDiscount === 'string'
+        ? parseFloat(extractedData.premiumDiscount.replace(/[^0-9.-]+/g, ''))
+        : Number(extractedData.premiumDiscount);
+      if (!isNaN(disc)) {
+        fieldsToUpdate.discount = disc;
+      }
+    }
+
     // Map date fields (format to YYYY-MM-DD for date input)
     if (extractedData.periodFrom) {
       fieldsToUpdate.periodFrom = this.formatDateForInput(extractedData.periodFrom);
@@ -719,7 +757,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     console.log('Auto-filling form with extracted data:', fieldsToUpdate);
     this.form.patchValue(fieldsToUpdate);
 
-    // Recalculate derived fields
+    // Recalculate derived fields (GST and final premium will consider discount)
     this.calculateGstAndFinalPremium();
     this.calculateRefBrokerageAmount();
 
@@ -787,6 +825,8 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
         },
         error: (error) => {
           this.policyExtractionLoading = false;
+          // Clear form fields on extraction error
+          this.clearFormFieldsBeforeAutoFill();
           this.documentUploadError = 'Error extracting policy details: ' + (error.error?.message || error.message || 'Please try again');
           console.error('Error extracting policy details:', error);
         }
@@ -1109,10 +1149,12 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
    * Returns GST Amount calculated from Net Premium and GST %
    */
   getGstAmount(): number {
-    const netPremium = this.form.get('netPremium')?.value || 0;
-    const gstPercent = this.form.get('gstPercent')?.value || 0;
+    const netPremium = parseFloat(this.form.get('netPremium')?.value || 0);
+    const discount = parseFloat(this.form.get('discount')?.value || 0);
+    const gstPercent = parseFloat(this.form.get('gstPercent')?.value || 0);
 
-    const gstAmount = (parseFloat(netPremium) * parseFloat(gstPercent)) / 100;
+    const taxableBase = Math.max(0, netPremium - discount);
+    const gstAmount = (taxableBase * gstPercent) / 100;
 
     return gstAmount;
   }
@@ -1123,18 +1165,21 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
    *          Final Premium = Net Premium + GST Amount
    */
   calculateGstAndFinalPremium(): void {
-    const netPremium = this.form.get('netPremium')?.value || 0;
-    const gstPercent = this.form.get('gstPercent')?.value || 0;
+    const netPremium = parseFloat(this.form.get('netPremium')?.value || 0);
+    const discount = parseFloat(this.form.get('discount')?.value || 0);
+    const gstPercent = parseFloat(this.form.get('gstPercent')?.value || 0);
 
-    // Calculate GST Amount
-    const gstAmount = (parseFloat(netPremium) * parseFloat(gstPercent)) / 100;
+    const taxableBase = Math.max(0, netPremium - discount);
 
-    // Calculate Final Premium
-    const finalPremium = parseFloat(netPremium) + gstAmount;
+    // Calculate GST Amount based on taxable base after discount
+    const gstAmount = (taxableBase * gstPercent) / 100;
 
-    // Update GST Amount field (for storing if needed)
+    // Calculate Final Premium: (Net Premium - Discount) + GST Amount
+    const finalPremium = taxableBase + gstAmount;
+
+    // Update GST Amount and Final Premium fields
     this.form.patchValue(
-      { 
+      {
         gstAmount: gstAmount.toFixed(2),
         finalPremium: finalPremium.toFixed(2)
       },
@@ -1147,10 +1192,12 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
    * Returns Final Premium = Net Premium + GST Amount
    */
   getFinalPremium(): number {
-    const netPremium = this.form.get('netPremium')?.value || 0;
+    const netPremium = parseFloat(this.form.get('netPremium')?.value || 0);
+    const discount = parseFloat(this.form.get('discount')?.value || 0);
     const gstAmount = this.getGstAmount();
 
-    const finalPremium = parseFloat(netPremium) + gstAmount;
+    const taxableBase = Math.max(0, netPremium - discount);
+    const finalPremium = taxableBase + gstAmount;
 
     return finalPremium;
   }
@@ -1256,6 +1303,12 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     // Watch for changes in GST % to update GST Amount and Final Premium
     this.form.get('gstPercent')?.valueChanges.subscribe(() => {
       this.calculateGstAndFinalPremium();
+    });
+
+    // Watch for changes in Discount to update GST Amount and Final Premium
+    this.form.get('discount')?.valueChanges.subscribe(() => {
+      this.calculateGstAndFinalPremium();
+      this.calculateRefBrokerageAmount();
     });
 
     // Watch for changes in Ref Brokerage % to update Ref. Brokerage Amount

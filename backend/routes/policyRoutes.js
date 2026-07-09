@@ -154,6 +154,7 @@ router.post('/api/import/policies', (req, res, next) => {
       const basicODPremium = parseNumeric('basicODPremium', row.basicODPremium, 0, errors);
       const tpPremium = parseNumeric('tpPremium', row.tpPremium, 0, errors);
       const netPremium = parseNumeric('netPremium', row.netPremium, 0, errors);
+      const premiumDiscount = parseNumeric('premiumDiscount', row.premiumDiscount, 0, errors);
       const finalPremium = parseNumeric('finalPremium', row.finalPremium, 0, errors);
       const refBrokerageOn = normalizeText(row.refBrokerageOn, 'Dummy Ref Brokerage On', 50, errors);
       const totalIDV = parseNumeric('totalIDV', row.totalIDV, 0, errors);
@@ -207,6 +208,7 @@ router.post('/api/import/policies', (req, res, next) => {
         netPremium,
         gstPercent: parseOptionalNumeric(row.gstPercent),
         gstAmount: parseOptionalNumeric(row.gstAmount),
+        premiumDiscount: parseOptionalNumeric(row.premiumDiscount),
         finalPremium,
         refBrokerageOn,
         premiumSource: row.premiumSource && String(row.premiumSource).trim() ? String(row.premiumSource).trim() : 'Net Premium',
@@ -249,6 +251,7 @@ router.post('/api/import/policies', (req, res, next) => {
         netPremium: item.netPremium,
         gstPercent: item.gstPercent,
         gstAmount: item.gstAmount,
+        premiumDiscount: item.premiumDiscount,
         finalPremium: item.finalPremium,
         refBrokerageOn: item.refBrokerageOn,
         premiumSource: item.premiumSource,
@@ -398,6 +401,7 @@ router.post('/api/policy', async (req, res) => {
       tpPremium: policyData.tpPremium,
       ncb: policyData.ncb || null,
       netPremium: policyData.netPremium,
+      premiumDiscount: policyData.premiumDiscount != null ? policyData.premiumDiscount : (policyData.discount != null ? policyData.discount : 0),
       gstPercent: policyData.gstPercent || null,
       gstAmount: policyData.gstAmount || null,
       finalPremium: policyData.finalPremium,
@@ -830,6 +834,7 @@ router.put('/api/policy/:id', async (req, res) => {
       tpPremium: policyData.tpPremium,
       ncb: policyData.ncb || null,
       netPremium: policyData.netPremium,
+      premiumDiscount: policyData.premiumDiscount != null ? policyData.premiumDiscount : (policyData.discount != null ? policyData.discount : 0),
       gstPercent: policyData.gstPercent || null,
       gstAmount: policyData.gstAmount || null,
       finalPremium: policyData.finalPremium,

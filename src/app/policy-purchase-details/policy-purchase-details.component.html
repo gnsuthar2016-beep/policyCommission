@@ -276,6 +276,17 @@
           </div>
         </div>
 
+        <!-- Discount (optional) -->
+        <div class="form-group">
+          <label for="discount">Discount</label>
+          <input type="text" id="discount" formControlName="discount" class="form-control" 
+                 placeholder="Enter discount amount" inputmode="decimal">
+          <small style="color: #666;">Optional. Discount is subtracted from Net Premium before GST calculation.</small>
+          <div class="error-message" *ngIf="form.get('discount')?.touched && form.get('discount')?.invalid">
+            {{ getErrorMessage('discount') }}
+          </div>
+        </div>
+
         <!-- GST % with % symbol -->
         <div class="form-group">
           <label for="gstPercent">GST %</label>
@@ -294,7 +305,7 @@
           <label for="gstAmount">GST Amount (Auto-calculated)</label>
           <input type="text" id="gstAmount" [value]="getGstAmount() | number:'1.2-2'" class="form-control" 
                  readonly disabled placeholder="Calculated automatically" style="background-color: #f5f5f5; cursor: not-allowed;">
-          <small style="color: #666;">Calculated as: Net Premium × GST% ÷ 100</small>
+          <small style="color: #666;">Calculated as: (Net Premium - Discount) × GST% ÷ 100</small>
         </div>
 
         <!-- Final Premium -->
@@ -302,7 +313,7 @@
           <label for="finalPremium">Final Premium <span class="required">*</span></label>
           <input type="text" id="finalPremium" [value]="getFinalPremium() | number:'1.2-2'" class="form-control" 
                  placeholder="Calculated automatically" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
-          <small style="color: #666;">Auto-calculated as: Net Premium + GST Amount</small>
+          <small style="color: #666;">Auto-calculated as: (Net Premium - Discount) + GST Amount</small>
           <div class="error-message" *ngIf="form.get('finalPremium')?.touched && form.get('finalPremium')?.invalid">
             {{ getErrorMessage('finalPremium') }}
           </div>
@@ -379,25 +390,19 @@
           </div>
         </div>
 
-        <!-- Make -->
+        <!-- Make (textbox) -->
         <div class="form-group">
           <label for="make">Make</label>
-          <select id="make" formControlName="make" class="form-control">
-            <option value="" disabled selected>Select Vehicle Make</option>
-            <option *ngFor="let m of vehicleMakes" [value]="m">{{ m }}</option>
-          </select>
+          <input type="text" id="make" formControlName="make" class="form-control" placeholder="Enter vehicle make">
           <div class="error-message" *ngIf="form.get('make')?.touched && form.get('make')?.invalid">
             {{ getErrorMessage('make') }}
           </div>
         </div>
 
-        <!-- Model -->
+        <!-- Model (textbox) -->
         <div class="form-group">
           <label for="model">Model</label>
-          <select id="model" formControlName="model" class="form-control">
-            <option value="" disabled selected>Select Vehicle Model</option>
-            <option *ngFor="let mod of vehicleModels" [value]="mod">{{ mod }}</option>
-          </select>
+          <input type="text" id="model" formControlName="model" class="form-control" placeholder="Enter vehicle model">
           <div class="error-message" *ngIf="form.get('model')?.touched && form.get('model')?.invalid">
             {{ getErrorMessage('model') }}
           </div>

@@ -77,6 +77,11 @@ const Policy = sequelize.define('Policy', {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
   },
+  premiumDiscount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    defaultValue: 0.00
+  },
   gstPercent: {
     type: DataTypes.DECIMAL(5, 2),
     allowNull: true
