@@ -269,8 +269,13 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
           }
           
           // Format date fields for proper display in HTML date inputs
+          const discountValue = policy.premiumDiscount != null
+            ? Number(policy.premiumDiscount)
+            : (policy.discount != null ? Number(policy.discount) : 0);
+
           const formattedPolicy = {
             ...policy,
+            discount: discountValue,
             periodFrom: this.formatDateForInput(policy.periodFrom),
             periodTo: this.formatDateForInput(policy.periodTo),
             policyDate: this.formatDateForInput(policy.policyDate),
