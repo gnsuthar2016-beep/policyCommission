@@ -674,8 +674,33 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     console.log('Form fields cleared before auto-fill');
   }
 
+  private getExtractedPolicyData(extractResponse: any): any {
+    if (!extractResponse) {
+      return null;
+    }
+
+    if (extractResponse.data) {
+      return extractResponse.data;
+    }
+
+    if (extractResponse.rawJob?.extract_result) {
+      return extractResponse.rawJob.extract_result;
+    }
+
+    if (extractResponse.rawJob?.result) {
+      return extractResponse.rawJob.result;
+    }
+
+    if (extractResponse.rawJob) {
+      return extractResponse.rawJob;
+    }
+
+    return extractResponse;
+  }
+
   private autoFillPolicyDetailsFromExtraction(extractResponse: any): void {
-    if (!extractResponse || !extractResponse.success || !extractResponse.rawJob || !extractResponse.rawJob.extract_result) {
+    const extractedData = this.getExtractedPolicyData(extractResponse);
+    if (!extractResponse || !extractResponse.success || !extractedData) {
       console.warn('Invalid extraction response or missing data');
       return;
     }
@@ -683,21 +708,24 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     // Clear fields before auto-filling
     this.clearFormFieldsBeforeAutoFill();
 
-    const extractedData = extractResponse.rawJob.extract_result;
-
     // Map extracted fields to form fields
     const fieldsToUpdate: any = {};
 
     // Map simple text fields
     if (extractedData.policyNumber) fieldsToUpdate.policyNumber = extractedData.policyNumber;
     if (extractedData.companyName) fieldsToUpdate.companyName = extractedData.companyName;
+    if (extractedData.insurance_company_name) fieldsToUpdate.companyName = extractedData.insurance_company_name;
     if (extractedData.productName) fieldsToUpdate.productName = extractedData.productName;
     if (extractedData.insuranceType) fieldsToUpdate.insuranceType = extractedData.insuranceType;
     if (extractedData.insuranceBranch) fieldsToUpdate.insuranceBranch = extractedData.insuranceBranch;
     if (extractedData.policyType) fieldsToUpdate.policyType = extractedData.policyType;
+    if (extractedData.policy_type) fieldsToUpdate.policyType = extractedData.policy_type;
     if (extractedData.make) fieldsToUpdate.make = extractedData.make;
+    if (extractedData.vehicle_make) fieldsToUpdate.make = extractedData.vehicle_make;
     if (extractedData.model) fieldsToUpdate.model = extractedData.model;
+    if (extractedData.vehicle_model_variant_subtype) fieldsToUpdate.model = extractedData.vehicle_model_variant_subtype;
     if (extractedData.registrationNumber) fieldsToUpdate.registrationNumber = extractedData.registrationNumber;
+    if (extractedData.vehicle_registration_number) fieldsToUpdate.registrationNumber = extractedData.vehicle_registration_number;
 
     // Map numeric fields
     if (extractedData.basicODPremium !== null && extractedData.basicODPremium !== undefined) {
@@ -712,17 +740,32 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     if (extractedData.netPremium !== null && extractedData.netPremium !== undefined) {
       fieldsToUpdate.netPremium = extractedData.netPremium;
     }
+    if (extractedData.net_premium !== null && extractedData.net_premium !== undefined) {
+      fieldsToUpdate.netPremium = extractedData.net_premium;
+    }
     if (extractedData.gstPercent !== null && extractedData.gstPercent !== undefined) {
       fieldsToUpdate.gstPercent = extractedData.gstPercent;
     }
     if (extractedData.gstAmount !== null && extractedData.gstAmount !== undefined) {
       fieldsToUpdate.gstAmount = extractedData.gstAmount;
     }
+    if (extractedData.gst !== null && extractedData.gst !== undefined) {
+      fieldsToUpdate.gstAmount = extractedData.gst;
+    }
     if (extractedData.finalPremium !== null && extractedData.finalPremium !== undefined) {
       fieldsToUpdate.finalPremium = extractedData.finalPremium;
     }
+    if (extractedData.gross_premium !== null && extractedData.gross_premium !== undefined) {
+      fieldsToUpdate.finalPremium = extractedData.gross_premium;
+    }
     if (extractedData.totalIDV !== null && extractedData.totalIDV !== undefined) {
       fieldsToUpdate.totalIDV = extractedData.totalIDV;
+    }
+    if (extractedData.idv !== null && extractedData.idv !== undefined) {
+      fieldsToUpdate.totalIDV = extractedData.idv;
+    }
+    if (extractedData.sum_insured !== null && extractedData.sum_insured !== undefined) {
+      fieldsToUpdate.totalIDV = extractedData.sum_insured;
     }
 
     // Map premium discount if provided by extraction
@@ -754,6 +797,9 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     // }
 
     // Map customer details if available
+    if (extractedData.policy_holder_name) {
+      fieldsToUpdate.customerName = extractedData.policy_holder_name;
+    }
     if (extractedData.name) {
       fieldsToUpdate.customerName = extractedData.name;
     }
@@ -812,27 +858,27 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       this.policyDocumentExtractService.extractPolicyDetails(file).subscribe({
         next: (response) => {
           this.policyExtractionLoading = false;
+          documentEntry.file = file;
+          this.documents.push(documentEntry);
+          this.documentForm.reset();
+          fileInput.value = '';
+
           if (response && response.success) {
             // Auto-fill the form with extracted data
             this.autoFillPolicyDetailsFromExtraction(response);
             this.documentUploadError = '';
-
-            // For new policy, just add to documents list
-            documentEntry.file = file;
-            this.documents.push(documentEntry);
-            this.documentForm.reset();
-            fileInput.value = '';
           } else {
-            this.policyExtractionLoading = false;
-            this.documentUploadError = 'Failed to extract policy details. Please check the document and try again.';
-            console.error('Extraction failed:', response);
+            this.documentUploadError = 'Could not extract policy details. Document is uploaded and you can enter details manually.';
+            console.warn('Extraction failed or returned no data:', response);
           }
         },
         error: (error) => {
           this.policyExtractionLoading = false;
-          // Clear form fields on extraction error
-          this.clearFormFieldsBeforeAutoFill();
-          this.documentUploadError = 'Error extracting policy details: ' + (error.error?.message || error.message || 'Please try again');
+          documentEntry.file = file;
+          this.documents.push(documentEntry);
+          this.documentForm.reset();
+          fileInput.value = '';
+          this.documentUploadError = 'Error extracting policy details. Document is uploaded and you can enter details manually.';
           console.error('Error extracting policy details:', error);
         }
       });

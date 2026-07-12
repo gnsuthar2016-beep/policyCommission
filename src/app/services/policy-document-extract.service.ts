@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class PolicyDocumentExtractService {
-  private apiUrl = 'https://policy-api.alluresofttech.com/api/extract-policy';
+  private apiUrl = 'https://ocr.alluresofttech.com/extract';
 
   constructor(private http: HttpClient) { }
 
@@ -17,7 +17,7 @@ export class PolicyDocumentExtractService {
    */
   extractPolicyDetails(file: File): Observable<any> {
     const formData = new FormData();
-    formData.append('policyDoc', file);
+    formData.append('file', file);
     
     return this.http.post<any>(this.apiUrl, formData);
   }
