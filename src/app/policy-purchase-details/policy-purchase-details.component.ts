@@ -122,7 +122,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     this.loadMiscMasterValues();
 
     // Setup automatic calculation for Net Premium
-    this.setupPremiumCalculationListeners();
+    // this.setupPremiumCalculationListeners();
     
     // Check for route params to determine if in edit mode
     this.route.params.subscribe(params => {
@@ -286,14 +286,15 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
           console.log('Formatted Policy with premiumSource:', formattedPolicy.premiumSource);
           
           this.form.patchValue(formattedPolicy);
+          // this.syncCalculatedPremiumFields();
           
           // Verify premiumSource was set in the form
           console.log('Form premiumSource value after patchValue:', this.form.get('premiumSource')?.value);
           
           // Recalculate derived fields (GST and Final Premium)
-          this.calculateGstAndFinalPremium();
+          // this.calculateGstAndFinalPremium();
           // Recalculate Ref. Brokerage Amount
-          this.calculateRefBrokerageAmount();
+          // this.calculateRefBrokerageAmount();
           // Load documents
           if (policy.documents && Array.isArray(policy.documents)) {
             this.documents = policy.documents.map((doc: any, index: number) => ({
@@ -363,6 +364,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       basicODPremium: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       tpPremium: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       ncb: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      ncbAmount: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       netPremium: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       discount: [0, [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       gstPercent: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
@@ -500,6 +502,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
         customerName: formData.customerName.trim(),
         // Ensure premiumSource is included
         premiumSource: formData.premiumSource || 'Net Premium',
+        ncbAmount: this.form.get('ncbAmount')?.value || this.getNcbAmount().toFixed(2),
         // Ensure dates are in ISO string format
         periodFrom: formatDateToISO(formData.periodFrom),
         periodTo: formatDateToISO(formData.periodTo),
@@ -657,7 +660,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   private clearFormFieldsBeforeAutoFill(): void {
     // Clear all editable premium and vehicle detail fields before auto-filling
     const fieldsToClear = [
-      'basicODPremium', 'tpPremium', 'ncb', 'netPremium', 'discount',
+      'basicODPremium', 'tpPremium', 'ncb', 'ncbAmount', 'netPremium', 'discount',
       'gstPercent', 'gstAmount', 'finalPremium', 'totalIDV',
       'make', 'model', 'registrationNumber',
       'policyNumber', 'companyName', 'productName', 'insuranceType',
@@ -736,6 +739,12 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     }
     if (extractedData.ncb !== null && extractedData.ncb !== undefined) {
       fieldsToUpdate.ncb = extractedData.ncb;
+    }
+    if (extractedData.ncbAmount !== null && extractedData.ncbAmount !== undefined) {
+      fieldsToUpdate.ncbAmount = extractedData.ncbAmount;
+    }
+    if (extractedData.ncb_amount !== null && extractedData.ncb_amount !== undefined) {
+      fieldsToUpdate.ncbAmount = extractedData.ncb_amount;
     }
     if (extractedData.netPremium !== null && extractedData.netPremium !== undefined) {
       fieldsToUpdate.netPremium = extractedData.netPremium;
@@ -1160,22 +1169,25 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
    * Formula: Net Premium = (OD Premium + TP Premium) - [(OD Premium + TP Premium) * NCB% / 100]
    */
   calculateNetPremium(): void {
-    const basicODPremium = this.form.get('basicODPremium')?.value || 0;
-    const tpPremium = this.form.get('tpPremium')?.value || 0;
-    const ncbPercent = this.form.get('ncb')?.value || 0;
+    const basicODPremium = parseFloat(this.form.get('basicODPremium')?.value || 0);
+    const tpPremium = parseFloat(this.form.get('tpPremium')?.value || 0);
+    const ncbPercent = parseFloat(this.form.get('ncb')?.value || 0);
 
     // Calculate total of OD and TP premiums
-    const totalPremium = parseFloat(basicODPremium) + parseFloat(tpPremium);
+    const totalPremium = basicODPremium + tpPremium;
 
     // Calculate NCB amount (NCB percentage of total premium)
-    const ncbAmount = (totalPremium * parseFloat(ncbPercent)) / 100;
+    const ncbAmount = (totalPremium * ncbPercent) / 100;
 
     // Calculate Net Premium (Total - NCB Amount)
     const netPremium = totalPremium - ncbAmount;
 
-    // Update the Net Premium field with calculated value (rounded to 2 decimal places)
+    // Update the NCB Amount and Net Premium fields with calculated values
     this.form.patchValue(
-      { netPremium: netPremium.toFixed(2) },
+      {
+        ncbAmount: ncbAmount.toFixed(2),
+        netPremium: netPremium.toFixed(2)
+      },
       { emitEvent: false }
     );
   }
@@ -1185,12 +1197,12 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
    * Returns the amount deducted based on NCB percentage
    */
   getNcbAmount(): number {
-    const basicODPremium = this.form.get('basicODPremium')?.value || 0;
-    const tpPremium = this.form.get('tpPremium')?.value || 0;
-    const ncbPercent = this.form.get('ncb')?.value || 0;
+    const basicODPremium = parseFloat(this.form.get('basicODPremium')?.value || 0);
+    const tpPremium = parseFloat(this.form.get('tpPremium')?.value || 0);
+    const ncbPercent = parseFloat(this.form.get('ncb')?.value || 0);
 
-    const totalPremium = parseFloat(basicODPremium) + parseFloat(tpPremium);
-    const ncbAmount = (totalPremium * parseFloat(ncbPercent)) / 100;
+    const totalPremium = basicODPremium + tpPremium;
+    const ncbAmount = (totalPremium * ncbPercent) / 100;
 
     return ncbAmount;
   }
@@ -1331,7 +1343,6 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       });
     });
 
-    // Auto-fill Period To when Period From changes and Period To is empty or previously auto-filled
     this.form.get('periodFrom')?.valueChanges.subscribe((value) => {
       const periodToControl = this.form.get('periodTo');
       const currentPeriodTo = periodToControl?.value;
@@ -1349,27 +1360,6 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
 
     this.form.get('periodTo')?.valueChanges.subscribe(() => {
       this.periodToAutoFilled = false;
-    });
-
-    // Watch for changes in GST % to update GST Amount and Final Premium
-    this.form.get('gstPercent')?.valueChanges.subscribe(() => {
-      this.calculateGstAndFinalPremium();
-    });
-
-    // Watch for changes in Discount to update GST Amount and Final Premium
-    this.form.get('discount')?.valueChanges.subscribe(() => {
-      this.calculateGstAndFinalPremium();
-      this.calculateRefBrokerageAmount();
-    });
-
-    // Watch for changes in Ref Brokerage % to update Ref. Brokerage Amount
-    this.form.get('refBrokeragePercent')?.valueChanges.subscribe(() => {
-      this.calculateRefBrokerageAmount();
-    });
-
-    // Watch for changes in Premium Source dropdown to update Ref. Brokerage On
-    this.form.get('premiumSource')?.valueChanges.subscribe(() => {
-      this.calculateRefBrokerageAmount();
     });
   }
 }

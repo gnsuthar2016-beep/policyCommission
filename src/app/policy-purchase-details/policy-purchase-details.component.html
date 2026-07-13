@@ -258,10 +258,11 @@
         </div>
 
         <!-- NCB Amount (Calculated) -->
+         <!-- [value]="getNcbAmount() | number:'1.2-2'" -->
         <div class="form-group">
           <label for="ncbAmount">NCB Amount (Auto-calculated)</label>
-          <input type="text" id="ncbAmount" [value]="getNcbAmount() | number:'1.2-2'" class="form-control" 
-                 readonly disabled placeholder="Calculated automatically" style="background-color: #f5f5f5; cursor: not-allowed;">
+          <input type="text" id="ncbAmount" formControlName="ncbAmount" class="form-control" 
+                 placeholder="Calculated automatically" style="background-color: #f5f5f5;">
           <small style="color: #666;">Calculated as: (OD Premium + TP Premium) × NCB% ÷ 100</small>
         </div>
 
@@ -269,7 +270,7 @@
         <div class="form-group">
           <label for="netPremium">Net Premium <span class="required">*</span></label>
           <input type="text" id="netPremium" formControlName="netPremium" class="form-control" 
-                 placeholder="Enter amount" inputmode="decimal" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
+                 placeholder="Enter amount" inputmode="decimal" style="background-color: #f5f5f5;">
           <small style="color: #666;">Auto-calculated as: (OD Premium + TP Premium) - NCB Amount</small>
           <div class="error-message" *ngIf="form.get('netPremium')?.touched && form.get('netPremium')?.invalid">
             {{ getErrorMessage('netPremium') }}
@@ -301,18 +302,20 @@
         </div>
 
         <!-- GST Amount -->
+         <!-- [value]="getGstAmount() | number:'1.2-2'" -->
         <div class="form-group">
           <label for="gstAmount">GST Amount (Auto-calculated)</label>
-          <input type="text" id="gstAmount" [value]="getGstAmount() | number:'1.2-2'" class="form-control" 
-                 readonly disabled placeholder="Calculated automatically" style="background-color: #f5f5f5; cursor: not-allowed;">
+          <input type="text" id="gstAmount" formControlName="gstAmount" class="form-control" 
+                 placeholder="Calculated automatically" style="background-color: #f5f5f5;">
           <small style="color: #666;">Calculated as: (Net Premium - Discount) × GST% ÷ 100</small>
         </div>
 
         <!-- Final Premium -->
+         <!-- [value]="getFinalPremium() | number:'1.2-2'" -->
         <div class="form-group">
           <label for="finalPremium">Final Premium <span class="required">*</span></label>
-          <input type="text" id="finalPremium" [value]="getFinalPremium() | number:'1.2-2'" class="form-control" 
-                 placeholder="Calculated automatically" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
+          <input type="text" id="finalPremium" formControlName="finalPremium" class="form-control" 
+                 placeholder="Calculated automatically" style="background-color: #f5f5f5;">
           <small style="color: #666;">Auto-calculated as: (Net Premium - Discount) + GST Amount</small>
           <div class="error-message" *ngIf="form.get('finalPremium')?.touched && form.get('finalPremium')?.invalid">
             {{ getErrorMessage('finalPremium') }}
@@ -336,8 +339,8 @@
               <option value="Net Premium">Net Premium</option>
             </select>
             <!-- Ref. Brokerage On Textbox -->
-            <input type="text" id="refBrokerageOn" [value]="getRefBrokerageOn() | number:'1.2-2'" class="form-control" 
-                   readonly disabled placeholder="Auto-populated" style="background-color: #f5f5f5; cursor: not-allowed; flex: 1;">
+             <!-- [value]="getRefBrokerageOn() | number:'1.2-2'" -->
+            <input type="text" id="refBrokerageOn" formControlName="refBrokerageOn" class="form-control"  placeholder="Auto-populated" style="background-color: #f5f5f5; cursor: not-allowed; flex: 1;">
           </div>
           <small style="color: #666;">Select premium type above to populate value</small>
         </div>
@@ -356,10 +359,11 @@
         </div>
 
         <!-- Ref. Brokerage Amount (Auto-calculated) -->
+         <!-- [value]="getRefBrokerageAmount() | number:'1.2-2'" -->
         <div class="form-group">
           <label for="refBrokerageAmount">Ref. Brokerage Amount (Auto-calculated)</label>
-          <input type="text" id="refBrokerageAmount" [value]="getRefBrokerageAmount() | number:'1.2-2'" class="form-control" 
-                 readonly disabled placeholder="Calculated automatically" style="background-color: #f5f5f5; cursor: not-allowed;">
+          <input type="text" id="refBrokerageAmount" formControlName="refBrokerageAmount" class="form-control" 
+             placeholder="Calculated automatically" style="background-color: #f5f5f5; cursor: not-allowed;">
           <small style="color: #666;">Calculated as: Ref. Brokerage On × Ref Brokerage% ÷ 100</small>
         </div>
       </div>

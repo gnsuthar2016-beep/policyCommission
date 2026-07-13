@@ -73,6 +73,10 @@ const Policy = sequelize.define('Policy', {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true
   },
+  ncbAmount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true
+  },
   netPremium: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
