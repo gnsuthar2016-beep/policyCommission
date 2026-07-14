@@ -361,20 +361,20 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       periodFrom: ['', Validators.required],
       periodTo: ['', Validators.required],
       policyDate: [''],
-      basicODPremium: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      tpPremium: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      ncb: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      ncbAmount: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      netPremium: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      basicODPremium: [0, [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      tpPremium: [0, [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      ncb: [0, [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      ncbAmount: [0, [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      netPremium: [0, [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       discount: [0, [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      gstPercent: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      gstAmount: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      finalPremium: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      gstPercent: [0, [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      gstAmount: [0, [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      finalPremium: [0, [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       premiumSource: ['Net Premium', Validators.required],
-      refBrokerageOn: ['', [Validators.required,Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      refBrokeragePercent: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      refBrokerageAmount: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      totalIDV: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      refBrokerageOn: [0, [Validators.required,Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      refBrokeragePercent: [0, [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      refBrokerageAmount: [0, [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      totalIDV: [0, [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       make: [''],
       model: [''],
       registrationNumber: ['']
@@ -650,6 +650,23 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
 
   reset(): void {
     this.form.reset();
+    // Ensure numeric premium and brokerage fields revert to 0 after reset
+    this.form.patchValue({
+      basicODPremium: 0,
+      tpPremium: 0,
+      ncb: 0,
+      ncbAmount: 0,
+      netPremium: 0,
+      discount: 0,
+      gstPercent: 0,
+      gstAmount: 0,
+      finalPremium: 0,
+      totalIDV: 0,
+      refBrokerageOn: 0,
+      refBrokeragePercent: 0,
+      refBrokerageAmount: 0,
+      premiumSource: 'Net Premium'
+    });
     this.documents = [];
   }
 
@@ -662,15 +679,26 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     const fieldsToClear = [
       'basicODPremium', 'tpPremium', 'ncb', 'ncbAmount', 'netPremium', 'discount',
       'gstPercent', 'gstAmount', 'finalPremium', 'totalIDV',
+      'refBrokerageOn', 'refBrokeragePercent', 'refBrokerageAmount',
       'make', 'model', 'registrationNumber',
       'policyNumber', 'companyName', 'productName', 'insuranceType',
       'insuranceBranch', 'policyType', 'periodFrom', 'periodTo', 'policyDate'
     ];
-    
+
+    const numericFields = new Set([
+      'basicODPremium', 'tpPremium', 'ncb', 'ncbAmount', 'netPremium', 'discount',
+      'gstPercent', 'gstAmount', 'finalPremium', 'totalIDV',
+      'refBrokerageOn', 'refBrokeragePercent', 'refBrokerageAmount'
+    ]);
+
     fieldsToClear.forEach(field => {
       const control = this.form.get(field);
       if (control) {
-        control.reset('');
+        if (numericFields.has(field)) {
+          control.reset(0);
+        } else {
+          control.reset('');
+        }
       }
     });
     
