@@ -374,7 +374,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       refBrokerageOn: [0, [Validators.required,Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       refBrokeragePercent: [0, [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       refBrokerageAmount: [0, [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      totalIDV: [0, [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      totalIDV: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       make: [''],
       model: [''],
       registrationNumber: ['']
@@ -687,7 +687,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
 
     const numericFields = new Set([
       'basicODPremium', 'tpPremium', 'ncb', 'ncbAmount', 'netPremium', 'discount',
-      'gstPercent', 'gstAmount', 'finalPremium', 'totalIDV',
+      'gstPercent', 'gstAmount', 'finalPremium',
       'refBrokerageOn', 'refBrokeragePercent', 'refBrokerageAmount'
     ]);
 
