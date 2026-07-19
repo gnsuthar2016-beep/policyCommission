@@ -1174,18 +1174,24 @@ router.get('/api/policies/month/:year/:month', async (req, res) => {
   }
 });
 
-// Get renewal policies (expiring within next 3 days)
+// Get renewal policies (expiring within next N days). Query param: ?days=15
 router.get('/api/policies/renewal', async (req, res) => {
   try {
-    // Calculate date range: today to today + 3 days
+    // Read days param (default 3)
+    let days = parseInt(req.query.days, 10);
+    if (isNaN(days) || days <= 0) days = 3;
+    // Cap to 365 days to avoid huge queries
+    if (days > 365) days = 365;
+
+    // Calculate date range: today (start) to today + days
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const endDate = new Date(today);
-    endDate.setDate(endDate.getDate() + 3);
+    endDate.setDate(endDate.getDate() + days);
     endDate.setHours(23, 59, 59, 999);
 
-    // Fetch policies expiring within the next 3 days
+    // Fetch policies expiring within the next 'days' days
     const renewalPolicies = await Policy.findAll({
       where: {
         periodTo: {
@@ -1193,14 +1199,15 @@ router.get('/api/policies/renewal', async (req, res) => {
         }
       },
       order: [['periodTo', 'ASC']],
-      limit: 20
+      limit: 100
     });
 
     res.status(200).json({
       success: true,
-      message: 'Renewal policies fetched successfully',
+      message: `Renewal policies fetched successfully for next ${days} day(s)`,
       data: renewalPolicies,
-      count: renewalPolicies.length
+      count: renewalPolicies.length,
+      days
     });
   } catch (error) {
     console.error('Error fetching renewal policies:', error);

@@ -93,9 +93,11 @@ export class PolicyService {
     return this.http.post(`${this.apiUrl}/import/policies`, fd);
   }
 
-  // Get renewal policies (expiring within 3 days)
-  getRenewalPolicies(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/policies/renewal`);
+  // Get renewal policies (expiring within `days`). Default server-side is 3 days.
+  getRenewalPolicies(days?: number): Observable<any> {
+    const params: any = {};
+    if (days != null) params.days = days;
+    return this.http.get(`${this.apiUrl}/policies/renewal`, { params });
   }
 
   // Search policies by structured criteria; supports pagination

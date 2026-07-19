@@ -88,7 +88,8 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.initializeForm();
     this.loadReferenceNames();
-    this.loadRenewalPolicies();
+    // Show policies expiring within next 15 days
+    this.loadRenewalPolicies(15);
     // Delay chart loading to ensure canvas elements are initialized
     setTimeout(() => {
       this.loadDailyCommissionChart();
@@ -339,9 +340,9 @@ export class DashboardComponent implements OnInit {
     this.loadMonthlyCommissionChart();
   }
 
-  loadRenewalPolicies(): void {
+  loadRenewalPolicies(days: number = 3): void {
     this.renewalLoading = true;
-    this.policyService.getRenewalPolicies().subscribe({
+    this.policyService.getRenewalPolicies(days).subscribe({
       next: (response) => {
         this.renewalLoading = false;
         if (response.success && Array.isArray(response.data)) {
