@@ -121,8 +121,8 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     this.loadReferenceNames();
     this.loadMiscMasterValues();
 
-    // Setup automatic calculation for Net Premium
-    // this.setupPremiumCalculationListeners();
+    // Setup automatic calculation and date listener for period fields
+    this.setupPremiumCalculationListeners();
     
     // Check for route params to determine if in edit mode
     this.route.params.subscribe(params => {
@@ -1327,8 +1327,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     }
 
     const nextYear = new Date(date);
-    nextYear.setFullYear(nextYear.getFullYear() + 1);
-    nextYear.setDate(nextYear.getDate() - 1);
+    nextYear.setDate(nextYear.getDate() + 364);
 
     return this.formatDateForInput(nextYear);
   }
