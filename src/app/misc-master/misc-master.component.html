@@ -72,7 +72,7 @@
           <tr *ngFor="let item of miscItems; let i = index">
             <td>{{ item.id }}</td>
             <td>{{ item.name }}</td>
-            <td>{{ item.createdAt | date: 'medium' }}</td>
+            <td>{{ item.createdAt | date: 'yyyy-MM-dd' }}</td>
             <td>
               <button 
                 class="btn-delete" 

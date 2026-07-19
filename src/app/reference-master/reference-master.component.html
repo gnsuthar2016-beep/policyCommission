@@ -69,9 +69,11 @@
         <label for="dateOfBirth">Date of Birth</label>
         <input 
           id="dateOfBirth" 
-          type="date" 
+          type="text" 
           formControlName="dateOfBirth" 
           class="form-control"
+          placeholder="dd-MM-yyyy"
+          (input)="onDateInputChange($event, 'dateOfBirth')"
           [class.is-invalid]="form.get('dateOfBirth')?.invalid && form.get('dateOfBirth')?.touched">
         <div class="error-message" *ngIf="form.get('dateOfBirth')?.invalid && form.get('dateOfBirth')?.touched">
           {{ getErrorMessage('dateOfBirth') }}
@@ -139,7 +141,7 @@
             <td>{{ reference.name }}</td>
             <td>{{ reference.mobileNumber }}</td>
             <td>{{ reference.emailId }}</td>
-            <td>{{ reference.createdAt | date: 'medium' }}</td>
+            <td>{{ reference.createdAt | date: 'yyyy-MM-dd' }}</td>
             <td>
               <button 
                 class="btn-edit" 

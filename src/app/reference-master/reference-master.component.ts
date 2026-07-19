@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { formatDateToISO, formatDateToDisplay, parseToISO } from '../utils/date-utils';
 import { ReferenceService } from '../services/reference.service';
 
 @Component({
@@ -21,6 +22,7 @@ export class ReferenceMasterComponent implements OnInit {
 
   ngOnInit(): void {
     this.initializeForm();
+    this.setupDateInputNormalization(this.form, 'dateOfBirth');
     this.fetchReferences();
   }
 
@@ -33,6 +35,47 @@ export class ReferenceMasterComponent implements OnInit {
       dateOfBirth: ['', []],
       remark: ['', []]
     });
+  }
+
+  private setupDateInputNormalization(form: FormGroup, controlName: string): void {
+    const control = form.get(controlName);
+    if (!control) {
+      return;
+    }
+
+    control.valueChanges.subscribe((value: any) => {
+      if (value === null || value === undefined || value === '') {
+        return;
+      }
+      const iso = parseToISO(value);
+      if (iso) {
+        control.setValue(formatDateToDisplay(iso, ''), { emitEvent: false });
+        control.setErrors(null);
+      } else {
+        // leave user input; validation on submit/blur
+      }
+    });
+  }
+
+  onDateInputChange(event: Event, controlName: string): void {
+    const input = event.target as HTMLInputElement | null;
+    const control = this.form.get(controlName);
+    if (!input || !control) {
+      return;
+    }
+
+    const value = input.value?.trim() || '';
+    if (!value) {
+      control.setValue('', { emitEvent: false });
+      return;
+    }
+    const iso = parseToISO(value);
+    if (iso) {
+      control.setValue(formatDateToDisplay(iso, ''), { emitEvent: false });
+      control.setErrors(null);
+    } else {
+      // leave raw input; validator will mark invalid
+    }
   }
 
   fetchReferences(): void {
@@ -57,6 +100,7 @@ export class ReferenceMasterComponent implements OnInit {
   submit(): void {
     if (this.form.valid) {
       const formData = this.form.value;
+      formData.dateOfBirth = formData.dateOfBirth ? parseToISO(formData.dateOfBirth) : '';
       this.loading = true;
 
       const apiCall = this.isEditMode && this.editingReferenceId
@@ -145,6 +189,9 @@ export class ReferenceMasterComponent implements OnInit {
         return 'Mobile number must be 10 digits';
       }
       return `${this.getLabelName(field)} format is invalid`;
+    }
+    if (control?.hasError('invalidDateFormat')) {
+      return `${this.getLabelName(field)} must be a valid date (dd-MM-yyyy)`;
     }
     if (control?.hasError('email')) {
       return 'Email ID format is invalid';

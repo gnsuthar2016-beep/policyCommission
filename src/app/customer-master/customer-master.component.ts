@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { formatDateToISO, formatDateToDisplay, parseToISO } from '../utils/date-utils';
 import { CustomerService } from '../services/customer.service';
 import { MiscMasterService } from '../services/misc-master.service';
 
@@ -32,6 +33,7 @@ export class CustomerMasterComponent implements OnInit {
     this.initializeForm();
     this.initializeDocumentForm();
     this.loadDocumentTypes();
+    this.setupDateInputNormalization(this.form, 'dateOfBirth');
     this.fetchCustomers();
   }
 
@@ -101,6 +103,47 @@ export class CustomerMasterComponent implements OnInit {
     });
   }
 
+  private setupDateInputNormalization(form: FormGroup, controlName: string): void {
+    const control = form.get(controlName);
+    if (!control) {
+      return;
+    }
+
+    control.valueChanges.subscribe((value: any) => {
+      if (value === null || value === undefined || value === '') {
+        return;
+      }
+      const iso = parseToISO(value);
+      if (iso) {
+        control.setValue(formatDateToDisplay(iso, ''), { emitEvent: false });
+        control.setErrors(null);
+      } else {
+        // leave user input; validation on submit/blur
+      }
+    });
+  }
+
+  onDateInputChange(event: Event, controlName: string): void {
+    const input = event.target as HTMLInputElement | null;
+    const control = this.form.get(controlName);
+    if (!input || !control) {
+      return;
+    }
+
+    const value = input.value?.trim() || '';
+    if (!value) {
+      control.setValue('', { emitEvent: false });
+      return;
+    }
+    const iso = parseToISO(value);
+    if (iso) {
+      control.setValue(formatDateToDisplay(iso, ''), { emitEvent: false });
+      control.setErrors(null);
+    } else {
+      // keep raw input; validation will pick this up
+    }
+  }
+
   initializeDocumentForm(): void {
     this.documentForm = this.fb.group({
       documentType: ['', Validators.required]
@@ -145,6 +188,7 @@ export class CustomerMasterComponent implements OnInit {
   submit(): void {
     if (this.form.valid) {
       const formData = this.form.value;
+      formData.dateOfBirth = formData.dateOfBirth ? parseToISO(formData.dateOfBirth) : '';
       this.loading = true;
 
       const apiCall = this.isEditMode && this.editingCustomerId
@@ -275,7 +319,7 @@ export class CustomerMasterComponent implements OnInit {
       documentType,
       fileName: file.name,
       fileSize: (file.size / 1024).toFixed(2) + ' KB',
-      uploadDate: new Date().toLocaleString()
+      uploadDate: new Date().toISOString().split('T')[0]
     };
 
     if (this.isEditMode && this.editingCustomerId) {
@@ -419,6 +463,9 @@ export class CustomerMasterComponent implements OnInit {
         return 'Mobile number must be 10 digits';
       }
       return `${this.getLabelName(field)} format is invalid`;
+    }
+    if (control?.hasError('invalidDateFormat')) {
+      return `${this.getLabelName(field)} must be a valid date (dd-MM-yyyy)`;
     }
     if (control?.hasError('email')) {
       return 'Email ID format is invalid';

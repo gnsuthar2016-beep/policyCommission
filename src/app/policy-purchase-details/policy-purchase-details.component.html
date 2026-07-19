@@ -193,7 +193,7 @@
         <!-- Period From -->
         <div class="form-group">
           <label for="periodFrom">Period From <span class="required">*</span></label>
-          <input type="date" id="periodFrom" formControlName="periodFrom" class="form-control">
+          <input type="text" id="periodFrom" formControlName="periodFrom" class="form-control" placeholder="dd-MM-yyyy" (change)="onDateInputChange($event, 'periodFrom')" (input)="onDateInputChange($event, 'periodFrom')">
           <div class="error-message" *ngIf="form.get('periodFrom')?.touched && form.get('periodFrom')?.invalid">
             {{ getErrorMessage('periodFrom') }}
           </div>
@@ -202,7 +202,7 @@
         <!-- Period To -->
         <div class="form-group">
           <label for="periodTo">Period To <span class="required">*</span></label>
-          <input type="date" id="periodTo" formControlName="periodTo" class="form-control">
+          <input type="text" id="periodTo" formControlName="periodTo" class="form-control" placeholder="dd-MM-yyyy" (change)="onDateInputChange($event, 'periodTo')" (input)="onDateInputChange($event, 'periodTo')">
           <div class="error-message" *ngIf="form.get('periodTo')?.touched && form.get('periodTo')?.invalid">
             {{ getErrorMessage('periodTo') }}
           </div>
@@ -211,7 +211,7 @@
         <!-- Policy Date -->
         <div class="form-group">
           <label for="policyDate">Policy Date</label>
-          <input type="date" id="policyDate" formControlName="policyDate" class="form-control">
+          <input type="text" id="policyDate" formControlName="policyDate" class="form-control" placeholder="dd-MM-yyyy" (change)="onDateInputChange($event, 'policyDate')" (input)="onDateInputChange($event, 'policyDate')">
           <div class="error-message" *ngIf="form.get('policyDate')?.touched && form.get('policyDate')?.invalid">
             {{ getErrorMessage('policyDate') }}
           </div>
@@ -571,6 +571,7 @@
               type="date" 
               formControlName="dateOfBirth" 
               class="form-control"
+              placeholder="yyyy-MM-dd"
               [class.is-invalid]="addCustomerForm.get('dateOfBirth')?.invalid && addCustomerForm.get('dateOfBirth')?.touched">
             <div class="error-message" *ngIf="addCustomerForm.get('dateOfBirth')?.invalid && addCustomerForm.get('dateOfBirth')?.touched">
               {{ getCustomerErrorMessage('dateOfBirth') }}
@@ -684,6 +685,7 @@
               type="date" 
               formControlName="dateOfBirth" 
               class="form-control"
+              placeholder="yyyy-MM-dd"
               [class.is-invalid]="addReferenceForm.get('dateOfBirth')?.invalid && addReferenceForm.get('dateOfBirth')?.touched">
             <div class="error-message" *ngIf="addReferenceForm.get('dateOfBirth')?.invalid && addReferenceForm.get('dateOfBirth')?.touched">
               {{ getReferenceErrorMessage('dateOfBirth') }}

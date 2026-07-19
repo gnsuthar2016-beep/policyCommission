@@ -6,6 +6,7 @@ import { PolicyService } from '../services/policy.service';
 import { MiscMasterService } from '../services/misc-master.service';
 import { CustomerService } from '../services/customer.service';
 import { ReferenceService } from '../services/reference.service';
+import { formatDateToISO, formatDateToDisplay, parseToISO } from '../utils/date-utils';
 
 @Component({
   selector: 'app-policy-purchase-details',
@@ -112,6 +113,12 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     this.initializeAddCustomerForm();
     this.initializeAddReferenceForm();
     
+    this.setupDateInputNormalization(this.form, 'periodFrom');
+    this.setupDateInputNormalization(this.form, 'periodTo');
+    this.setupDateInputNormalization(this.form, 'policyDate');
+    this.setupDateInputNormalization(this.addCustomerForm, 'dateOfBirth');
+    this.setupDateInputNormalization(this.addReferenceForm, 'dateOfBirth');
+
     // Load Customer names and Misc Master values for all dropdowns
     this.loadCustomerNames();
     this.loadReferenceNames();
@@ -134,29 +141,95 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     });
   }
 
-  // Helper method to format date for HTML date input (YYYY-MM-DD)
+  // Validator to ensure date is parseable to ISO (accepts DD-MM-YYYY or YYYY-MM-DD)
+  private dateValidator() {
+    return (control: any) => {
+      const v = control.value;
+      if (v === null || v === undefined || v === '') return null;
+      const iso = parseToISO(v);
+      return iso ? null : { invalidDateFormat: true };
+    };
+  }
+
+  // Helper method to format date for display in inputs (DD-MM-YYYY)
   private formatDateForInput(dateValue: any): string {
-    if (!dateValue) return '';
-    
-    let date: Date;
-    
-    if (typeof dateValue === 'string') {
-      date = new Date(dateValue);
-    } else if (dateValue instanceof Date) {
-      date = dateValue;
-    } else {
-      return '';
+    return formatDateToDisplay(dateValue, '');
+  }
+
+  onDateInputChange(event: Event, controlName: string): void {
+    const input = event.target as HTMLInputElement | null;
+    const control = this.form.get(controlName);
+    if (!input || !control) {
+      return;
     }
-    
-    // Check if date is valid
-    if (isNaN(date.getTime())) return '';
-    
-    // Format to YYYY-MM-DD
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    
-    return `${year}-${month}-${day}`;
+
+    const value = input.value?.trim() || '';
+    if (!value) {
+      control.setValue('', { emitEvent: false });
+      return;
+    }
+
+    const iso = parseToISO(value);
+    if (iso) {
+      // normalize to display form only when parseable
+      control.setValue(formatDateToDisplay(iso, ''), { emitEvent: false });
+      control.setErrors(null);
+    } else {
+      // leave user input as-is; validator will mark invalid when touched/submitted
+      // do not override errors here
+    }
+  }
+
+  onDateTextInput(event: Event, controlName: string): void {
+    const input = event.target as HTMLInputElement | null;
+    const control = this.form.get(controlName);
+    if (!input || !control) {
+      return;
+    }
+
+    const rawValue = input.value?.trim() || '';
+    if (!rawValue) {
+      control.setValue('', { emitEvent: false });
+      return;
+    }
+    const iso = parseToISO(rawValue);
+    if (!iso) return;
+    control.setValue(formatDateToDisplay(iso, ''), { emitEvent: false });
+  }
+
+  onCalendarSelection(event: Event, controlName: string): void {
+    const input = event.target as HTMLInputElement | null;
+    const control = this.form.get(controlName);
+    if (!input || !control) {
+      return;
+    }
+
+    if (!input.value) {
+      control.setValue('', { emitEvent: false });
+      return;
+    }
+    const iso = parseToISO(input.value);
+    control.setValue(iso ? formatDateToDisplay(iso, '') : input.value, { emitEvent: false });
+  }
+
+  private setupDateInputNormalization(form: FormGroup, controlName: string): void {
+    const control = form.get(controlName);
+    if (!control) {
+      return;
+    }
+
+    control.valueChanges.subscribe((value: any) => {
+      if (value === null || value === undefined || value === '') {
+        return;
+      }
+      const iso = parseToISO(value);
+      if (iso) {
+        const display = formatDateToDisplay(iso, '');
+        if (display !== value) {
+          control.setValue(display, { emitEvent: false });
+        }
+      }
+    });
   }
 
   loadCustomerNames(): void {
@@ -348,9 +421,9 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       companyName: ['', Validators.required],
       insuranceType: [''],
       productName: ['', Validators.required],
-      periodFrom: ['', Validators.required],
-      periodTo: ['', Validators.required],
-      policyDate: [''],
+      periodFrom: ['', [Validators.required, this.dateValidator()]],
+      periodTo: ['', [Validators.required, this.dateValidator()]],
+      policyDate: ['', [this.dateValidator()]],
       basicODPremium: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       tpPremium: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       ncb: ['', [Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
@@ -463,25 +536,6 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       console.log('Form Data Before Submit:', formData);
       console.log('Customer Name Being Submitted:', formData.customerName);
       
-      // Helper function to format dates to ISO string (YYYY-MM-DD)
-      const formatDateToISO = (dateValue: any): string | null => {
-        if (!dateValue) return null;
-        
-        let date: Date;
-        if (typeof dateValue === 'string') {
-          date = new Date(dateValue);
-        } else if (dateValue instanceof Date) {
-          date = dateValue;
-        } else {
-          return null;
-        }
-        
-        if (isNaN(date.getTime())) return null;
-        
-        // Return ISO string (YYYY-MM-DD format)
-        return date.toISOString().split('T')[0];
-      };
-      
       const policyPayload = {
         ...formData,
         // Ensure customerName is properly set to the selected value
@@ -489,9 +543,9 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
         // Ensure premiumSource is included
         premiumSource: formData.premiumSource || 'Net Premium',
         // Ensure dates are in ISO string format
-        periodFrom: formatDateToISO(formData.periodFrom),
-        periodTo: formatDateToISO(formData.periodTo),
-        policyDate: formatDateToISO(formData.policyDate)
+        periodFrom: parseToISO(formData.periodFrom),
+        periodTo: parseToISO(formData.periodTo),
+        policyDate: parseToISO(formData.policyDate)
       };
       
       console.log('Complete Payload Being Sent to API:', policyPayload);
@@ -548,6 +602,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     if (this.addCustomerForm.valid) {
       this.addingCustomer = true;
       const newCustomer = this.addCustomerForm.value;
+      newCustomer.dateOfBirth = newCustomer.dateOfBirth ? formatDateToISO(newCustomer.dateOfBirth, '') : '';
 
       this.customerService.saveCustomer(newCustomer).subscribe({
         next: (response) => {
@@ -591,6 +646,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     if (this.addReferenceForm.valid) {
       this.addingReference = true;
       const newReference = this.addReferenceForm.value;
+      newReference.dateOfBirth = newReference.dateOfBirth ? formatDateToISO(newReference.dateOfBirth, '') : '';
 
       this.referenceService.saveReference(newReference).subscribe({
         next: (response) => {
@@ -658,39 +714,42 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       documentType,
       fileName: file.name,
       fileSize: (file.size / 1024).toFixed(2) + ' KB',
-      uploadDate: new Date().toLocaleString()
+      uploadDate: new Date().toISOString().split('T')[0]
     };
 
-    if (this.isEditMode && this.policyId) {
-      const formData = new FormData();
-      formData.append('documentType', documentType);
-      formData.append('document', file);
+    const formData = new FormData();
+    formData.append('document', file);
+    formData.append('documentType', documentType);
 
-      this.policyService.addDocumentToPolicy(this.policyId, formData).subscribe({
-        next: (response) => {
-          if (response.success) {
-            const savedDoc = response.data;
-            this.documents.push({
-              id: savedDoc.id,
-              documentType: savedDoc.documentType,
-              fileName: savedDoc.fileName,
-              fileSize: savedDoc.fileSize,
-              uploadDate: savedDoc.uploadDate,
-              filePath: savedDoc.filePath
-            });
-            this.documentForm.reset();
-            fileInput.value = '';
-          } else {
-            this.documentUploadError = response.message || 'Unable to upload document.';
-          }
-        },
-        error: (error) => {
-          this.documentUploadError = error.error?.message || 'Unable to upload document.';
-          console.error('Error uploading document:', error);
-        }
-      });
+    if (this.policyId === null) {
+      this.documentUploadError = 'Policy ID is not set. Please save the policy first.';
       return;
     }
+
+    this.policyService.addDocumentToPolicy(this.policyId, formData).subscribe({
+      next: (response) => {
+        if (response.success) {
+          const savedDoc = response.data;
+          this.documents.push({
+            id: savedDoc.id,
+            documentType: savedDoc.documentType,
+            fileName: savedDoc.fileName,
+            fileSize: savedDoc.fileSize,
+            uploadDate: savedDoc.uploadDate,
+            filePath: savedDoc.filePath
+          });
+          this.documentForm.reset();
+          fileInput.value = '';
+        } else {
+          this.documentUploadError = response.message || 'Unable to upload document.';
+        }
+      },
+      error: (error) => {
+        this.documentUploadError = error.error?.message || 'Unable to upload document.';
+        console.error('Error uploading document:', error);
+      }
+    });
+    return;
 
     documentEntry.file = file;
     this.documents.push(documentEntry);
@@ -802,6 +861,9 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     if (control?.hasError('minlength')) {
       const minLength = control.getError('minlength').requiredLength;
       return `${this.getLabelName(field)} must be at least ${minLength} characters`;
+    }
+    if (control?.hasError('invalidDateFormat')) {
+      return `${this.getLabelName(field)} must be a valid date (dd-MM-yyyy)`;
     }
     if (control?.hasError('pattern')) {
       return `${this.getLabelName(field)} must be a valid number`;
@@ -1049,7 +1111,10 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       return null;
     }
 
-    const date = new Date(dateValue);
+    const iso = parseToISO(dateValue);
+    if (!iso) return null;
+
+    const date = new Date(iso);
     if (isNaN(date.getTime())) {
       return null;
     }

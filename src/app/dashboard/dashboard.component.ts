@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { PolicyService } from '../services/policy.service';
+import { formatDateToDisplay } from '../utils/date-utils';
 import {
   Chart,
   ChartConfiguration,
@@ -362,9 +363,7 @@ export class DashboardComponent implements OnInit {
   }
 
   formatDateForDisplay(dateValue: any): string {
-    if (!dateValue) return 'N/A';
-    const date = new Date(dateValue);
-    return date.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+    return formatDateToDisplay(dateValue, 'N/A');
   }
 
   ngOnDestroy(): void {

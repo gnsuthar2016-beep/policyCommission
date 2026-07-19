@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { PolicyService } from '../services/policy.service';
+import { formatDateToISO, formatDateToDisplay } from '../utils/date-utils';
 
 @Component({
   selector: 'app-policy-list',
@@ -148,6 +149,6 @@ export class PolicyListComponent implements OnInit {
   }
 
   formatDate(date: string): string {
-    return new Date(date).toLocaleDateString();
+    return formatDateToDisplay(date, 'N/A');
   }
 }

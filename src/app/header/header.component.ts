@@ -65,13 +65,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
   setSessionStartTime(): void {
     const loginTime = localStorage.getItem('loginTime');
     if (loginTime) {
-      this.sessionStartTime = new Date(loginTime).toLocaleString();
+      this.sessionStartTime = new Date(loginTime).toISOString().split('T')[0];
       this.updateSessionDuration();
     } else {
       // If loginTime not found, set it now
       const now = new Date().toISOString();
       localStorage.setItem('loginTime', now);
-      this.sessionStartTime = new Date(now).toLocaleString();
+      this.sessionStartTime = new Date(now).toISOString().split('T')[0];
       this.sessionDuration = '0s';
     }
   }
