@@ -140,4 +140,33 @@
       </table>
     </div>
   </div>
+
+  <!-- Birthdays Today Section -->
+  <div class="birthdays-section" *ngIf="birthdaysToday && birthdaysToday.length > 0">
+    <div class="birthdays-header">
+      <h2>🎂 Today's Birthdays</h2>
+      <span class="birthday-count">{{ birthdaysToday.length }} customers</span>
+    </div>
+
+    <div class="birthdays-list">
+      <table class="birthdays-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Mobile</th>
+            <th>Date of Birth</th>
+            <th>Remark</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of birthdaysToday">
+            <td>{{ c.name }}</td>
+            <td>{{ c.mobileNumber || c.alternativeMobileNumber || 'N/A' }}</td>
+            <td>{{ c.dateOfBirth | date:'dd-MMM' }}</td>
+            <td>{{ c.remark || '' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>

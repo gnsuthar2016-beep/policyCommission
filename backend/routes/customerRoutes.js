@@ -561,3 +561,33 @@ router.delete('/api/customer/document/:id', async (req, res) => {
 
 module.exports = router;
 
+// Get customers whose birthday is today (month-day match)
+router.get('/api/customers/birthdays/today', async (req, res) => {
+  try {
+    const Sequelize = require('sequelize');
+    const Op = Sequelize.Op;
+
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mmdd = `${mm}-${dd}`; // format MM-DD
+
+    const whereClause = Sequelize.where(
+      Sequelize.fn('to_char', Sequelize.col('"Customer"."dateOfBirth"'), 'MM-DD'),
+      Op.eq,
+      mmdd
+    );
+
+    const customers = await Customer.findAll({
+      where: Sequelize.and(whereClause, { dateOfBirth: { [Op.ne]: null } }),
+      attributes: ['id', 'name', 'mobileNumber', 'alternativeMobileNumber', 'dateOfBirth', 'remark'],
+      order: [['name', 'ASC']]
+    });
+
+    res.status(200).json({ success: true, data: customers, count: customers.length });
+  } catch (error) {
+    console.error('Error fetching today birthdays:', error);
+    res.status(500).json({ success: false, message: 'Error fetching today birthdays', error: error.message });
+  }
+});
+

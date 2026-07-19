@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { PolicyService } from '../services/policy.service';
+import { CustomerService } from '../services/customer.service';
 import {
   Chart,
   ChartConfiguration,
@@ -57,6 +58,7 @@ export class DashboardComponent implements OnInit {
   renewalPolicies: any[] = [];
   renewalLoading = false;
   todayEntriesCount = 0;
+  birthdaysToday: any[] = [];
 
   // Available months and years
   months = [
@@ -79,6 +81,7 @@ export class DashboardComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private policyService: PolicyService
+    , private customerService: CustomerService
   ) {
     // Initialize years (current year and previous 5 years)
     for (let i = 0; i < 5; i++) {
@@ -92,11 +95,32 @@ export class DashboardComponent implements OnInit {
     // Show policies expiring within next 15 days
     this.loadRenewalPolicies(15);
     this.loadTodayEntriesCount();
+    this.loadBirthdaysToday();
     // Delay chart loading to ensure canvas elements are initialized
     setTimeout(() => {
       this.loadDailyCommissionChart();
       this.loadMonthlyCommissionChart();
     }, 100);
+  }
+
+  loadBirthdaysToday(): void {
+    this.customerService.getTodaysBirthdays().subscribe({
+      next: (resp) => {
+        if (resp && resp.success && Array.isArray(resp.data)) {
+          this.birthdaysToday = resp.data;
+        } else if (Array.isArray(resp)) {
+          this.birthdaysToday = resp;
+        } else if (resp && Array.isArray(resp.data)) {
+          this.birthdaysToday = resp.data;
+        } else {
+          this.birthdaysToday = [];
+        }
+      },
+      error: (err) => {
+        console.error('Error loading birthdays today:', err);
+        this.birthdaysToday = [];
+      }
+    });
   }
 
   loadTodayEntriesCount(): void {

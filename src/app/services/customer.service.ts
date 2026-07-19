@@ -80,4 +80,9 @@ export class CustomerService {
     fd.append('file', file);
     return this.http.post(`${this.apiUrl}/import/customers`, fd);
   }
+
+  // Get customers whose birthday is today
+  getTodaysBirthdays(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/customers/birthdays/today`);
+  }
 }
