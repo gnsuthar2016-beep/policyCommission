@@ -1219,6 +1219,29 @@ router.get('/api/policies/renewal', async (req, res) => {
   }
 });
 
+// Get count of policies created today
+router.get('/api/policies/today/count', async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const count = await Policy.count({
+      where: {
+        createdAt: {
+          [Op.between]: [today, endOfDay]
+        }
+      }
+    });
+
+    res.status(200).json({ success: true, count });
+  } catch (error) {
+    console.error('Error fetching today policies count:', error);
+    res.status(500).json({ success: false, message: 'Error fetching today policies count', error: error.message });
+  }
+});
+
 // Admin Endpoint: Delete policies with N/A customer names
 router.delete('/api/admin/policies/cleanup/na', async (req, res) => {
   try {

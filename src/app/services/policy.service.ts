@@ -100,6 +100,11 @@ export class PolicyService {
     return this.http.get(`${this.apiUrl}/policies/renewal`, { params });
   }
 
+  // Get count of policies created today
+  getTodayPoliciesCount(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/policies/today/count`);
+  }
+
   // Search policies by structured criteria; supports pagination
   searchPolicies(searchCriteria: any = {}, page: number = 1, limit: number = 10): Observable<any> {
     const payload = { ...searchCriteria, page, limit };

@@ -56,6 +56,7 @@ export class DashboardComponent implements OnInit {
   monthlyChartData: any[] = [];
   renewalPolicies: any[] = [];
   renewalLoading = false;
+  todayEntriesCount = 0;
 
   // Available months and years
   months = [
@@ -90,11 +91,30 @@ export class DashboardComponent implements OnInit {
     this.loadReferenceNames();
     // Show policies expiring within next 15 days
     this.loadRenewalPolicies(15);
+    this.loadTodayEntriesCount();
     // Delay chart loading to ensure canvas elements are initialized
     setTimeout(() => {
       this.loadDailyCommissionChart();
       this.loadMonthlyCommissionChart();
     }, 100);
+  }
+
+  loadTodayEntriesCount(): void {
+    this.policyService.getTodayPoliciesCount().subscribe({
+      next: (response) => {
+        if (response && response.success) {
+          this.todayEntriesCount = Number(response.count) || 0;
+        } else if (response && typeof response.count === 'number') {
+          this.todayEntriesCount = response.count;
+        } else {
+          this.todayEntriesCount = 0;
+        }
+      },
+      error: (error) => {
+        console.error('Error loading today entries count:', error);
+        this.todayEntriesCount = 0;
+      }
+    });
   }
 
   initializeForm(): void {

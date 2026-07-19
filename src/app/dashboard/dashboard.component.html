@@ -89,8 +89,8 @@
       <p class="stat-value">₹{{ (dailyChartData | reduce: 'collection') | number:'1.2-2' }}</p>
     </div>
     <div class="stat-card">
-      <h3>Days Tracked</h3>
-      <p class="stat-value">{{ dailyChartData.length }}</p>
+      <h3>Today's Entries</h3>
+      <p class="stat-value">{{ todayEntriesCount }}</p>
     </div>
   </div>
 
