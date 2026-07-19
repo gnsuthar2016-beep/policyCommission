@@ -167,21 +167,21 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     this.customerService.getAllCustomers().subscribe({
       next: (response) => {
         if (response.success && response.data && Array.isArray(response.data)) {
-          // Extract just the names from customers and filter out N/A, empty, and invalid entries
+          // Keep full customer objects (name + address + mobile) for richer autocomplete
           this.customerNames = response.data
-            .map((customer: any) => customer.name)
-            .filter((name: string) => {
-              // Only keep non-empty, non-N/A names
-              return name && 
-                     name.trim() !== '' && 
-                     name.toLowerCase() !== 'n/a' &&
-                     name !== null &&
-                     name !== undefined;
+            .map((customer: any) => ({
+              name: customer.name || '',
+              remark: customer.remark || customer.notes || customer.remarkText || '',
+              mobileNumber: customer.mobileNumber || customer.mobile || customer.mobile_no || ''
+            }))
+            .filter((c: any) => {
+              return c.name && c.name.trim() !== '' && c.name.toLowerCase() !== 'n/a';
             })
-            .sort();
-          // Initialize filtered list
+            .sort((a: any, b: any) => a.name.localeCompare(b.name));
+
+          // Initialize filtered list with objects
           this.filteredCustomerNames = this.customerNames;
-          console.log('Loaded Customer Names:', this.customerNames);
+          console.log('Loaded Customer Names (objects):', this.customerNames);
         } else {
           this.customerNames = [];
           this.filteredCustomerNames = [];
@@ -390,15 +390,18 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   // Filter customer names for autocomplete
   filterCustomerNames(searchText: string): void {
     const trimmedSearch = searchText.trim().toLowerCase();
-    
     if (trimmedSearch === '') {
-      this.filteredCustomerNames = this.customerNames;
+      this.filteredCustomerNames = [];
     } else {
-      this.filteredCustomerNames = this.customerNames.filter(name =>
-        name.toLowerCase().includes(trimmedSearch)
-      );
+      this.filteredCustomerNames = this.customerNames.filter((c: any) => {
+        return (
+          (c.name || '').toLowerCase().includes(trimmedSearch) ||
+          (c.remark || '').toLowerCase().includes(trimmedSearch) ||
+          (c.mobileNumber || '').toLowerCase().includes(trimmedSearch)
+        );
+      });
     }
-    
+
     this.showCustomerDropdown = trimmedSearch !== '' && this.filteredCustomerNames.length > 0;
   }
 
@@ -410,8 +413,9 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   }
 
   // Select customer from filtered list
-  selectCustomer(customerName: string): void {
-    this.form.get('customerName')?.setValue(customerName);
+  selectCustomer(customer: any): void {
+    // Only set the name into the form as requested
+    this.form.get('customerName')?.setValue(customer?.name || '');
     this.showCustomerDropdown = false;
     this.filteredCustomerNames = [];
   }

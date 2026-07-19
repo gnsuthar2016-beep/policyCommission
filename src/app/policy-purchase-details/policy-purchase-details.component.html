@@ -89,7 +89,12 @@
                 class="autocomplete-option" 
                 *ngFor="let customer of filteredCustomerNames"
                 (mousedown)="selectCustomer(customer)">
-                {{ customer }}
+                <div class="option-main">{{ customer.name }}</div>
+                <div class="option-sub" *ngIf="customer.mobileNumber || customer.remark">
+                  <span *ngIf="customer.mobileNumber">{{ customer.mobileNumber }}</span>
+                  <span *ngIf="customer.mobileNumber && customer.remark"> &bull; </span>
+                  <small *ngIf="customer.remark">{{ customer.remark }}</small>
+                </div>
               </div>
             </div>
           </div>
