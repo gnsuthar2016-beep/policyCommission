@@ -95,7 +95,7 @@
   </div>
 
   <!-- Renewal List Section -->
-  <div class="renewal-section">
+  <div class="renewal-section" *ngIf="renewalPolicies.length > 0">
     <div class="renewal-header">
       <h2 class="renewal-title">⚠️ Policy About to Expire (Next 15 Days)</h2>
       <span class="renewal-count" *ngIf="renewalPolicies.length > 0">
