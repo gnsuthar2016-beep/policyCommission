@@ -166,8 +166,8 @@
             <td>{{ c.dateOfBirth | date:'dd-MMM-yyyy' }}</td>
             <td>{{ c.remark || '' }}</td>
             <td>
-              <button type="button" class="btn btn-primary btn-sm" (click)="openBirthdayWishPanel(c)">
-                Send Wish
+              <button type="button" class="btn btn-primary btn-sm birthday-send-icon" (click)="openBirthdayWishPanel(c)" aria-label="Send birthday wish">
+                🎉
               </button>
             </td>
           </tr>
