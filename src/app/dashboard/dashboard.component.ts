@@ -39,6 +39,7 @@ Chart.register(
 export class DashboardComponent implements OnInit {
   @ViewChild('dailyChart') dailyChartCanvas!: ElementRef;
   @ViewChild('monthlyChart') monthlyChartCanvas!: ElementRef;
+  @ViewChild('birthdayCanvas') birthdayCanvas!: ElementRef;
 
   filterForm!: FormGroup;
   
@@ -59,6 +60,22 @@ export class DashboardComponent implements OnInit {
   renewalLoading = false;
   todayEntriesCount = 0;
   birthdaysToday: any[] = [];
+  birthdayTemplates: any[] = [];
+  selectedBirthdayCustomer: any = null;
+  selectedTemplateId: number | null = null;
+  selectedTemplate: any = null;
+  customBirthdayText = '';
+  showBirthdayCardPanel = false;
+  birthdayTemplateUploadFile: File | null = null;
+  birthdayTemplateTitle = '';
+  birthdayTemplateUploadError = '';
+  birthdayTemplateUploadSuccess = '';
+  sharingBirthdayCard = false;
+  defaultBirthdayTemplate = {
+    id: 0,
+    title: 'Default Birthday Image',
+    filePath: '/assets/birthday-templates/birthday-template-default.jpg'
+  };
 
   // Available months and years
   months = [
@@ -96,6 +113,7 @@ export class DashboardComponent implements OnInit {
     this.loadRenewalPolicies(15);
     this.loadTodayEntriesCount();
     this.loadBirthdaysToday();
+    this.loadBirthdayTemplates();
     // Delay chart loading to ensure canvas elements are initialized
     setTimeout(() => {
       this.loadDailyCommissionChart();
@@ -121,6 +139,233 @@ export class DashboardComponent implements OnInit {
         this.birthdaysToday = [];
       }
     });
+  }
+
+  loadBirthdayTemplates(): void {
+    this.customerService.getBirthdayTemplates().subscribe({
+      next: (response) => {
+        const defaultTemplate = this.defaultBirthdayTemplate;
+        if (response && response.success && Array.isArray(response.data)) {
+          this.birthdayTemplates = [defaultTemplate, ...response.data];
+          if (!this.selectedTemplate && this.birthdayTemplates.length) {
+            this.selectBirthdayTemplate(this.birthdayTemplates[0]);
+          }
+        } else {
+          this.birthdayTemplates = [defaultTemplate];
+          if (!this.selectedTemplate) {
+            this.selectBirthdayTemplate(defaultTemplate);
+          }
+        }
+      },
+      error: (error) => {
+        console.error('Error loading birthday templates:', error);
+        this.birthdayTemplates = [this.defaultBirthdayTemplate];
+        if (!this.selectedTemplate) {
+          this.selectBirthdayTemplate(this.defaultBirthdayTemplate);
+        }
+      }
+    });
+  }
+
+  openBirthdayWishPanel(customer: any): void {
+    this.selectedBirthdayCustomer = customer;
+    this.showBirthdayCardPanel = true;
+    if (!this.selectedTemplate && this.birthdayTemplates.length) {
+      this.selectBirthdayTemplate(this.birthdayTemplates[0]);
+    }
+    setTimeout(() => {
+      this.renderBirthdayCanvas();
+    }, 100);
+  }
+
+  closeBirthdayWishPanel(): void {
+    this.showBirthdayCardPanel = false;
+    this.selectedBirthdayCustomer = null;
+    this.customBirthdayText = '';
+    this.birthdayTemplateUploadError = '';
+    this.birthdayTemplateUploadSuccess = '';
+  }
+
+  selectBirthdayTemplate(template: any): void {
+    this.selectedTemplateId = template.id;
+    this.selectedTemplate = template;
+    setTimeout(() => {
+      this.renderBirthdayCanvas();
+    }, 100);
+  }
+
+  onBirthdayTemplateFileSelected(event: any): void {
+    const file = event.target.files?.[0];
+    this.birthdayTemplateUploadFile = file || null;
+  }
+
+  uploadBirthdayTemplate(): void {
+    if (!this.birthdayTemplateUploadFile) {
+      this.birthdayTemplateUploadError = 'Please select an image to upload.';
+      return;
+    }
+    this.birthdayTemplateUploadError = '';
+    this.birthdayTemplateUploadSuccess = '';
+    this.customerService.uploadBirthdayTemplate(this.birthdayTemplateUploadFile, this.birthdayTemplateTitle).subscribe({
+      next: (response) => {
+        if (response && response.success) {
+          this.birthdayTemplateUploadSuccess = 'Template uploaded successfully.';
+          this.birthdayTemplateUploadFile = null;
+          this.birthdayTemplateTitle = '';
+          this.loadBirthdayTemplates();
+        } else {
+          this.birthdayTemplateUploadError = response.message || 'Upload failed';
+        }
+      },
+      error: (error) => {
+        console.error('Error uploading birthday template:', error);
+        this.birthdayTemplateUploadError = error?.message || 'Upload failed';
+      }
+    });
+  }
+
+  renderBirthdayCanvas(): void {
+    if (!this.selectedTemplate || !this.birthdayCanvas || !this.birthdayCanvas.nativeElement) {
+      return;
+    }
+
+    const canvas: HTMLCanvasElement = this.birthdayCanvas.nativeElement;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return;
+    }
+
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = () => {
+      const maxWidth = 600;
+      const maxHeight = 800;
+      let width = image.naturalWidth;
+      let height = image.naturalHeight;
+      const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
+      width = width * ratio;
+      height = height * ratio;
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(image, 0, 0, width, height);
+
+      if (this.customBirthdayText && this.customBirthdayText.trim()) {
+        const text = this.customBirthdayText.trim();
+        const padding = 24;
+        ctx.font = 'bold 28px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const maxTextWidth = width - padding * 2;
+        const wrappedLines = [];
+        const words = text.split(' ');
+        let line = '';
+
+        for (let i = 0; i < words.length; i++) {
+          const testLine = line + words[i] + ' ';
+          const metrics = ctx.measureText(testLine);
+          if (metrics.width > maxTextWidth && line) {
+            wrappedLines.push(line.trim());
+            line = `${words[i]} `;
+          } else {
+            line = testLine;
+          }
+        }
+        if (line.trim()) {
+          wrappedLines.push(line.trim());
+        }
+
+        const lineHeight = 36;
+        const blockHeight = wrappedLines.length * lineHeight + padding;
+        const blockTop = height - blockHeight;
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, blockTop, width, blockHeight);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.lineWidth = 4;
+        let textY = blockTop + padding / 2 + lineHeight / 2;
+        wrappedLines.forEach((lineText) => {
+          ctx.strokeText(lineText, width / 2, textY);
+          ctx.fillText(lineText, width / 2, textY);
+          textY += lineHeight;
+        });
+      }
+    };
+
+    image.onerror = () => {
+      console.error('Unable to load birthday template image for preview');
+    };
+
+    image.src = this.selectedTemplate.filePath;
+  }
+
+  sendBirthdayWish(): void {
+    if (!this.selectedTemplate || !this.selectedBirthdayCustomer || !this.birthdayCanvas || !this.birthdayCanvas.nativeElement) {
+      return;
+    }
+
+    const phone = this.getWhatsappPhone(this.selectedBirthdayCustomer);
+    if (!phone) {
+      alert('Customer mobile number is not available for WhatsApp.');
+      return;
+    }
+
+    const canvas: HTMLCanvasElement = this.birthdayCanvas.nativeElement;
+    const imageData = canvas.toDataURL('image/png');
+    const message = `Happy Birthday ${this.selectedBirthdayCustomer.name}! 🎉\n\nPlease paste the birthday card image below.`;
+    this.sharingBirthdayCard = true;
+
+    const openWhatsApp = () => {
+      this.sharingBirthdayCard = false;
+      window.open(this.getWhatsAppUrl(phone, message), '_blank');
+    };
+
+    if (navigator.clipboard && navigator.clipboard.write) {
+      const blob = this.dataURLToBlob(imageData);
+      const clipboardItem = new ClipboardItem({ 'image/png': blob });
+      navigator.clipboard.write([clipboardItem])
+        .then(() => {
+          openWhatsApp();
+          alert('Birthday image copied to clipboard. Paste it into the WhatsApp chat.');
+        })
+        .catch((err) => {
+          console.warn('Clipboard write failed:', err);
+          openWhatsApp();
+        });
+    } else {
+      openWhatsApp();
+    }
+  }
+
+  dataURLToBlob(dataURL: string): Blob {
+    const parts = dataURL.split(',');
+    const contentType = parts[0].split(':')[1].split(';')[0];
+    const byteString = atob(parts[1]);
+    const arrayBuffer = new ArrayBuffer(byteString.length);
+    const intArray = new Uint8Array(arrayBuffer);
+    for (let i = 0; i < byteString.length; i++) {
+      intArray[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([intArray], { type: contentType });
+  }
+
+  getWhatsappPhone(customer: any): string | null {
+    if (!customer) return null;
+    const raw = customer.mobileNumber || customer.alternativeMobileNumber;
+    if (!raw) return null;
+    const digits = raw.replace(/[^0-9]/g, '');
+    if (digits.length === 10) {
+      return `91${digits}`;
+    }
+    return digits;
+  }
+
+  getWhatsAppUrl(phone: string, message: string): string {
+    const encodedMessage = encodeURIComponent(message);
+    return `https://wa.me/${phone}?text=${encodedMessage}`;
   }
 
   loadTodayEntriesCount(): void {

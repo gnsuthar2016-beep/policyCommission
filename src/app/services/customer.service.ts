@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class CustomerService {
-  private apiUrl = 'https://policy-api.alluresofttech.com/api';
+  private apiUrl = 'http://localhost:3000/api';
 
   constructor(private http: HttpClient) {}
 
@@ -84,5 +84,23 @@ export class CustomerService {
   // Get customers whose birthday is today
   getTodaysBirthdays(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/customers/birthdays/today`);
+  }
+
+  // Birthday template management
+  getBirthdayTemplates(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/birthday-templates`);
+  }
+
+  uploadBirthdayTemplate(file: File, title?: string): Observable<any> {
+    const fd = new FormData();
+    fd.append('templateImage', file);
+    if (title) {
+      fd.append('title', title);
+    }
+    return this.http.post<any>(`${this.apiUrl}/birthday-templates`, fd);
+  }
+
+  deleteBirthdayTemplate(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/birthday-templates/${id}`);
   }
 }

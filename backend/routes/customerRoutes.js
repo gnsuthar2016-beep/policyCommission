@@ -1,11 +1,14 @@
 const express = require('express');
 const multer = require('multer');
 const streamifier = require('streamifier');
+const path = require('path');
+const fs = require('fs');
 const { v2: cloudinary } = require('cloudinary');
 const { Op } = require('sequelize');
 const router = express.Router();
 const Customer = require('../models/Customer');
 const CustomerDocument = require('../models/CustomerDocument');
+const BirthdayTemplate = require('../models/BirthdayTemplate');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -24,6 +27,32 @@ const upload = multer({
       cb(null, true);
     } else {
       cb(new Error('Only image and PDF files are allowed'));
+    }
+  }
+});
+
+const birthdayTemplateStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '..', '..', 'src', 'assets', 'birthday-templates');
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now();
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9-_\.]/g, '_');
+    cb(null, `${timestamp}-${safeName}`);
+  }
+});
+
+const templateUpload = multer({
+  storage: birthdayTemplateStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff', 'image/svg+xml'];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed for birthday templates'));
     }
   }
 });
@@ -559,7 +588,110 @@ router.delete('/api/customer/document/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+// Birthday template upload
+router.post('/api/birthday-templates', templateUpload.single('templateImage'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Template image file is required' });
+    }
+
+    const url = `/assets/birthday-templates/${req.file.filename}`;
+
+    const template = await BirthdayTemplate.create({
+      title: req.body.title || null,
+      fileName: req.file.originalname,
+      filePath: url,
+      cloudinaryPublicId: null
+    });
+
+    res.status(201).json({ success: true, data: template });
+  } catch (error) {
+    console.error('Error uploading birthday template:', error);
+    res.status(500).json({ success: false, message: 'Error uploading birthday template', error: error.message });
+  }
+});
+
+router.get('/api/birthday-templates', async (req, res) => {
+  try {
+    const templates = await BirthdayTemplate.findAll({ order: [['createdAt', 'DESC']] });
+    res.status(200).json({ success: true, data: templates });
+  } catch (error) {
+    console.error('Error fetching birthday templates:', error);
+    res.status(500).json({ success: false, message: 'Error fetching birthday templates', error: error.message });
+  }
+});
+
+router.delete('/api/birthday-templates/:id', async (req, res) => {
+  try {
+    const template = await BirthdayTemplate.findOne({ where: { id: req.params.id } });
+    if (!template) {
+      return res.status(404).json({ success: false, message: 'Template not found' });
+    }
+
+    if (template.cloudinaryPublicId && cloudinary.config().cloud_name) {
+      try {
+        await cloudinary.uploader.destroy(template.cloudinaryPublicId, { resource_type: 'image' });
+      } catch (cloudError) {
+        console.warn('Cloudinary template delete failed:', cloudError.message || cloudError);
+      }
+    } else {
+      const filename = path.basename(template.filePath);
+      const localPath = path.join(__dirname, '..', '..', 'src', 'assets', 'birthday-templates', filename);
+      fs.unlink(localPath, (unlinkError) => {
+        if (unlinkError && unlinkError.code !== 'ENOENT') {
+          console.warn('Failed to delete local birthday template file:', unlinkError.message || unlinkError);
+        }
+      });
+    }
+
+    await template.destroy();
+    res.status(200).json({ success: true, message: 'Template deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting birthday template:', error);
+    res.status(500).json({ success: false, message: 'Error deleting birthday template', error: error.message });
+  }
+});
+
+router.post('/api/birthday-templates/share', async (req, res) => {
+  try {
+    const { imageData } = req.body;
+    if (!imageData) {
+      return res.status(400).json({ success: false, message: 'Image data is required' });
+    }
+
+    const cloudinaryConfig = cloudinary.config();
+    if (!cloudinaryConfig.cloud_name || !cloudinaryConfig.api_key || !cloudinaryConfig.api_secret) {
+      return res.status(500).json({ success: false, message: 'Cloudinary configuration is missing' });
+    }
+
+    const base64Data = imageData.replace(/^data:image\/[a-zA-Z]+;base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    const uploadResult = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'image',
+          folder: 'birthday_cards',
+          public_id: `birthday_card_${Date.now()}`
+        },
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        }
+      );
+
+      streamifier.createReadStream(buffer).pipe(uploadStream);
+    });
+
+    res.status(201).json({ success: true, data: { imageUrl: uploadResult.secure_url } });
+  } catch (error) {
+    console.error('Error sharing birthday card:', error);
+    res.status(500).json({ success: false, message: 'Error sharing birthday card', error: error.message });
+  }
+});
 
 // Get customers whose birthday is today (month-day match)
 router.get('/api/customers/birthdays/today', async (req, res) => {
@@ -590,4 +722,6 @@ router.get('/api/customers/birthdays/today', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error fetching today birthdays', error: error.message });
   }
 });
+
+module.exports = router;
 
