@@ -155,14 +155,14 @@
             <th>Name</th>
             <th>Mobile</th>
             <th>Date of Birth</th>
-            <th>Remark</th>
+            <th>Address</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let c of birthdaysToday">
             <td>{{ c.name }}</td>
             <td>{{ c.mobileNumber || c.alternativeMobileNumber || 'N/A' }}</td>
-            <td>{{ c.dateOfBirth | date:'dd-MMM' }}</td>
+            <td>{{ c.dateOfBirth | date:'dd-MMM-yyyy' }}</td>
             <td>{{ c.remark || '' }}</td>
           </tr>
         </tbody>
