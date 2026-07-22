@@ -105,10 +105,14 @@ export class PolicyService {
     return this.http.get(`${this.apiUrl}/policies/today/count`);
   }
 
-  // Search policies by structured criteria; supports pagination
-  searchPolicies(searchCriteria: any = {}, page: number = 1, limit: number = 10): Observable<any> {
+  // Search policies by structured criteria; supports pagination and exact match
+  searchPolicies(searchCriteria: any = {}, page: number = 1, limit: number = 10, exact: boolean = false): Observable<any> {
     const payload = { ...searchCriteria, page, limit };
-    return this.http.post<any>(`${this.apiUrl}/policies/search`, payload);
+    const params: any = {};
+    if (exact) {
+      params.exact = true;
+    }
+    return this.http.post<any>(`${this.apiUrl}/policies/search`, payload, { params });
   }
 
   deletePolicy(policyId: number): Observable<any> {

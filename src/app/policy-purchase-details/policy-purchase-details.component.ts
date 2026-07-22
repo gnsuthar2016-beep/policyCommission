@@ -45,6 +45,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
   policyImportLoading = false;
   policyExtractionLoading = false;
   submitErrorMessage = '';
+  policyNumberWarning = '';
 
   // Filtered options for autocomplete
   filteredCustomerNames: any[] = [];
@@ -461,6 +462,37 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     setTimeout(() => {
       this.showReferenceDropdown = false;
     }, 150);
+  }
+
+  onPolicyNumberBlur(): void {
+    if (this.isEditMode) {
+      this.policyNumberWarning = '';
+      return;
+    }
+
+    const control = this.form.get('policyNumber');
+    const value = control?.value ? String(control.value).trim() : '';
+
+    if (!value) {
+      this.policyNumberWarning = '';
+      return;
+    }
+
+    this.policyService.searchPolicies({ customerName: null, policyNumber: value, registrationNumber: null, mobileNumber: null }, 1, 10, true)
+      .subscribe({
+        next: (response) => {
+          if (response && response.success && Array.isArray(response.data) && response.data.length > 0) {
+            control?.setValue('');
+            this.policyNumberWarning = 'Policy number already exists. Please enter a different policy number.';
+          } else {
+            this.policyNumberWarning = '';
+          }
+        },
+        error: (error) => {
+          console.warn('Policy number validation failed:', error);
+          this.policyNumberWarning = '';
+        }
+      });
   }
 
   // Close dropdowns when clicking outside

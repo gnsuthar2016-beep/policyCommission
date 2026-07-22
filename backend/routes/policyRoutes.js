@@ -570,6 +570,7 @@ router.get('/api/policies', async (req, res) => {
   router.post('/api/policies/search', async (req, res) => {
     try {
       const { customerName, policyNumber, registrationNumber, mobileNumber, page, limit } = req.body || {};
+      const exact = String(req.query.exact || '').toLowerCase() === 'true';
       const safePage = Number.isInteger(parseInt(page, 10)) && parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
       const safeLimit = Number.isInteger(parseInt(limit, 10)) && parseInt(limit, 10) > 0 ? parseInt(limit, 10) : 10;
       const offset = (safePage - 1) * safeLimit;
@@ -578,45 +579,56 @@ router.get('/api/policies', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Please provide at least one search criteria' });
       }
 
-      // If customer search fields provided, find matching customers first
-      let matchedCustomerNames = [];
-      if (customerName || mobileNumber) {
-        const orConds = [];
-        if (customerName && String(customerName).trim() !== '') {
-          orConds.push({ name: { [Op.iLike]: `%${String(customerName).trim()}%` } });
-        }
-        if (mobileNumber && String(mobileNumber).trim() !== '') {
-          orConds.push({ mobileNumber: { [Op.iLike]: `%${String(mobileNumber).trim()}%` } });
-          orConds.push({ alternativeMobileNumber: { [Op.iLike]: `%${String(mobileNumber).trim()}%` } });
-        }
-        if (orConds.length > 0) {
-          const customers = await Customer.findAll({ where: { [Op.or]: orConds }, attributes: ['name'] });
-          matchedCustomerNames = customers.map(c => c.name).filter(Boolean);
-        }
-      }
+      const trimmedPolicyNumber = policyNumber && String(policyNumber).trim() !== '' ? String(policyNumber).trim() : null;
+      let whereClause;
 
-      const policyOr = [];
-      if (policyNumber && String(policyNumber).trim() !== '') {
-        policyOr.push({ policyNumber: { [Op.iLike]: `%${String(policyNumber).trim()}%` } });
-      }
-      if (registrationNumber && String(registrationNumber).trim() !== '') {
-        policyOr.push({ registrationNumber: { [Op.iLike]: `%${String(registrationNumber).trim()}%` } });
-      }
-      if (matchedCustomerNames.length > 0) {
-        policyOr.push({ customerName: { [Op.in]: matchedCustomerNames } });
-      } else if (customerName && String(customerName).trim() !== '') {
-        policyOr.push({ customerName: { [Op.iLike]: `%${String(customerName).trim()}%` } });
-      }
+      if (exact && trimmedPolicyNumber) {
+        whereClause = {
+          policyNumber: {
+            [Op.iLike]: trimmedPolicyNumber
+          }
+        };
+      } else {
+        // If customer search fields provided, find matching customers first
+        let matchedCustomerNames = [];
+        if (customerName || mobileNumber) {
+          const orConds = [];
+          if (customerName && String(customerName).trim() !== '') {
+            orConds.push({ name: { [Op.iLike]: `%${String(customerName).trim()}%` } });
+          }
+          if (mobileNumber && String(mobileNumber).trim() !== '') {
+            orConds.push({ mobileNumber: { [Op.iLike]: `%${String(mobileNumber).trim()}%` } });
+            orConds.push({ alternativeMobileNumber: { [Op.iLike]: `%${String(mobileNumber).trim()}%` } });
+          }
+          if (orConds.length > 0) {
+            const customers = await Customer.findAll({ where: { [Op.or]: orConds }, attributes: ['name'] });
+            matchedCustomerNames = customers.map(c => c.name).filter(Boolean);
+          }
+        }
 
-      const baseValidCustomerClause = {
-        [Op.and]: [
-          sequelize.where(sequelize.col('customerName'), Op.ne, 'N/A'),
-          sequelize.where(sequelize.col('customerName'), Op.ne, null),
-          sequelize.where(sequelize.fn('TRIM', sequelize.col('customerName')), Op.ne, '')
-        ]
-      };
+        const policyOr = [];
+        if (trimmedPolicyNumber) {
+          policyOr.push({ policyNumber: { [Op.iLike]: `%${trimmedPolicyNumber}%` } });
+        }
+        if (registrationNumber && String(registrationNumber).trim() !== '') {
+          policyOr.push({ registrationNumber: { [Op.iLike]: `%${String(registrationNumber).trim()}%` } });
+        }
+        if (matchedCustomerNames.length > 0) {
+          policyOr.push({ customerName: { [Op.in]: matchedCustomerNames } });
+        } else if (customerName && String(customerName).trim() !== '') {
+          policyOr.push({ customerName: { [Op.iLike]: `%${String(customerName).trim()}%` } });
+        }
 
-      const whereClause = policyOr.length > 0 ? { [Op.and]: [ { [Op.or]: policyOr }, baseValidCustomerClause ] } : baseValidCustomerClause;
+        const baseValidCustomerClause = {
+          [Op.and]: [
+            sequelize.where(sequelize.col('customerName'), Op.ne, 'N/A'),
+            sequelize.where(sequelize.col('customerName'), Op.ne, null),
+            sequelize.where(sequelize.fn('TRIM', sequelize.col('customerName')), Op.ne, '')
+          ]
+        };
+
+        whereClause = policyOr.length > 0 ? { [Op.and]: [ { [Op.or]: policyOr }, baseValidCustomerClause ] } : baseValidCustomerClause;
+      }
 
       const { count, rows } = await Policy.findAndCountAll({
         where: whereClause,
@@ -1436,104 +1448,6 @@ router.post('/api/test/sample-policies', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error creating sample policies',
-      error: error.message
-    });
-  }
-});
-
-// Search Policies endpoint
-router.post('/api/policies/search', async (req, res) => {
-  try {
-    const { customerName, policyNumber, registrationNumber, mobileNumber } = req.body;
-
-    // Build search conditions
-    const searchConditions = [];
-
-    // Validate that at least one search parameter is provided
-    if (!customerName && !policyNumber && !registrationNumber && !mobileNumber) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide at least one search criteria'
-      });
-    }
-
-    // Add conditions for each provided search parameter
-    if (customerName && customerName.trim() !== '') {
-      searchConditions.push({
-        customerName: {
-          [Op.iLike]: `%${customerName.trim()}%`
-        }
-      });
-    }
-
-    if (policyNumber && policyNumber.trim() !== '') {
-      searchConditions.push({
-        policyNumber: {
-          [Op.iLike]: `%${policyNumber.trim()}%`
-        }
-      });
-    }
-
-    if (registrationNumber && registrationNumber.trim() !== '') {
-      searchConditions.push({
-        registrationNumber: {
-          [Op.iLike]: `%${registrationNumber.trim()}%`
-        }
-      });
-    }
-
-    if (mobileNumber && mobileNumber.trim() !== '') {
-      searchConditions.push({
-        mobileNumber: {
-          [Op.iLike]: `%${mobileNumber.trim()}%`
-        }
-      });
-    }
-
-    // Combine all conditions with OR operator and ensure valid customer names
-    const whereClause = {
-      [Op.and]: [
-        {
-          [Op.or]: searchConditions
-        },
-        {
-          [Op.and]: [
-            sequelize.where(sequelize.col('customerName'), Op.ne, 'N/A'),
-            sequelize.where(sequelize.col('customerName'), Op.ne, null),
-            sequelize.where(
-              sequelize.fn('TRIM', sequelize.col('customerName')), 
-              Op.ne, 
-              ''
-            )
-          ]
-        }
-      ]
-    };
-
-    // Execute search query
-    const policies = await Policy.findAll({
-      where: whereClause,
-      include: [
-        {
-          model: Document,
-          as: 'documents',
-          attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate']
-        }
-      ],
-      order: [['createdAt', 'DESC']]
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Search completed successfully',
-      count: policies.length,
-      data: policies
-    });
-  } catch (error) {
-    console.error('Error searching policies:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error searching policies',
       error: error.message
     });
   }
