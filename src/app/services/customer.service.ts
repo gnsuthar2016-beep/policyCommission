@@ -6,7 +6,9 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class CustomerService {
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl =  window.location.hostname === 'localhost'
+    ? 'http://localhost:3000/api'
+    : 'https://policy-api.alluresofttech.com/api';
 
   constructor(private http: HttpClient) {}
 
