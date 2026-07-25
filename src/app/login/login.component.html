@@ -21,6 +21,20 @@
       {{ errorMessage }}
     </div>
 
+    <div class="success" *ngIf="successMessage" [@fadeIn]>
+      <span class="error-icon">✅</span>
+      {{ successMessage }}
+    </div>
+
+    <div class="mode-toggle" [@fadeIn]>
+      <button type="button" class="mode-btn" [class.active]="selectedMode === 'admin'" (click)="switchMode('admin')">
+        Admin Login
+      </button>
+      <button type="button" class="mode-btn" [class.active]="selectedMode === 'customer'" (click)="switchMode('customer')">
+        Customer Login
+      </button>
+    </div>
+
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate [@fadeIn]>
       <div class="form-group">
         <label for="email">
@@ -43,7 +57,7 @@
         </div>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" *ngIf="selectedMode === 'admin'">
         <label for="password">
           <span class="label-icon">🔒</span>
           Password
@@ -64,24 +78,50 @@
         </div>
       </div>
 
+      <div class="form-group" *ngIf="selectedMode === 'customer' && otpSent">
+        <label for="otp">
+          <span class="label-icon">🔐</span>
+          OTP
+        </label>
+        <div class="input-wrapper">
+          <input 
+            id="otp"
+            type="text" 
+            formControlName="otp" 
+            placeholder="Enter 6-digit OTP" 
+            maxlength="6"
+            [disabled]="isLoading"
+            class="form-input"
+          />
+          <div class="input-focus-effect"></div>
+        </div>
+        <div class="otp-hint" *ngIf="generatedOtp">
+          <span>Generated OTP:</span>
+          <strong>{{ generatedOtp }}</strong>
+        </div>
+      </div>
+
       <button class="btn-primary" type="submit" [disabled]="isLoading" [class.loading]="isLoading">
-        <span class="btn-text">{{ isLoading ? 'Signing in...' : 'Sign in' }}</span>
+        <span class="btn-text">{{ isLoading ? (selectedMode === 'customer' ? 'Processing...' : 'Signing in...') : (selectedMode === 'customer' ? (otpSent ? 'Verify OTP' : 'Send OTP') : 'Sign in') }}</span>
         <span class="btn-icon" *ngIf="!isLoading">→</span>
         <span class="btn-loader" *ngIf="isLoading"></span>
       </button>
     </form>
 
     <div class="links" [@fadeIn]>
-      <div class="link-group">
+      <div class="link-group" *ngIf="selectedMode === 'admin'">
         <a (click)="goTo('register')" class="link-item">Create account</a>
       </div>
-      <div class="link-group">
+      <div class="link-group" *ngIf="selectedMode === 'admin'">
         <a (click)="goTo('forgot-password')" class="link-item">Forgot password?</a>
         <span class="link-divider">•</span>
         <a (click)="goTo('change-password')" class="link-item">Change password</a>
-        <span class="link-divider">•</span>
-        <a (click)="goTo('otp-login')" class="link-item">OTP Login</a>
       </div>
+      <!-- <div class="link-group">
+        <button type="button" class="link-item switch-link" (click)="switchMode(selectedMode === 'admin' ? 'customer' : 'admin')">
+          Switch to {{ selectedMode === 'admin' ? 'Customer Login' : 'Admin Login' }}
+        </button>
+      </div> -->
     </div>
   </div>
 </div>

@@ -38,29 +38,37 @@ export class LoginComponent implements OnInit {
   form!: FormGroup;
   isLoading = false;
   errorMessage = '';
+  successMessage = '';
+  selectedMode: 'admin' | 'customer' = 'admin';
+  otpSent = false;
+  generatedOtp = '';
 
   constructor(private fb: FormBuilder, private router: Router, private authService: AuthService) {}
 
   ngOnInit(): void {
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      otp: ['']
     });
   }
 
   submit() {
+    if (this.selectedMode === 'customer') {
+      this.handleCustomerLogin();
+      return;
+    }
+
     if (this.form.valid) {
       this.isLoading = true;
       this.errorMessage = '';
-      
+      this.successMessage = '';
+
       this.authService.login(this.form.value).subscribe({
         next: (response) => {
           if (response.success) {
-            // Store user data in localStorage
             localStorage.setItem('user', JSON.stringify(response.data));
-            // Store login time
             localStorage.setItem('loginTime', new Date().toISOString());
-            // Navigate to dashboard for password login
             this.router.navigate(['/dashboard']);
           } else {
             this.errorMessage = response.message;
@@ -82,6 +90,75 @@ export class LoginComponent implements OnInit {
       });
     } else {
       this.form.markAllAsTouched();
+    }
+  }
+
+  switchMode(mode: 'admin' | 'customer'): void {
+    this.selectedMode = mode;
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.otpSent = false;
+    this.generatedOtp = '';
+    this.form.get('otp')?.setValue('');
+  }
+
+  sendOtp(): void {
+    if (this.form.get('email')?.valid) {
+      this.isLoading = true;
+      this.errorMessage = '';
+      this.successMessage = '';
+
+      this.authService.sendOtp({ email: this.form.value.email }).subscribe({
+        next: (response) => {
+          this.isLoading = false;
+          this.otpSent = true;
+          const otpFromResponse = (response as any)?.data?.otp;
+          this.generatedOtp = otpFromResponse || '';
+          this.successMessage = response.message || 'OTP sent successfully. Please check your inbox.';
+          this.form.get('otp')?.setValue('');
+        },
+        error: (error) => {
+          this.isLoading = false;
+          this.errorMessage = error.error?.message || 'Unable to send OTP right now.';
+        }
+      });
+    } else {
+      this.form.get('email')?.markAsTouched();
+    }
+  }
+
+  handleCustomerLogin(): void {
+    if (!this.otpSent) {
+      this.sendOtp();
+      return;
+    }
+
+    if (this.form.valid && this.form.get('otp')?.value) {
+      this.isLoading = true;
+      this.errorMessage = '';
+      this.successMessage = '';
+
+      this.authService.verifyOtp({
+        email: this.form.value.email,
+        otp: this.form.value.otp
+      }).subscribe({
+        next: (response) => {
+          if (response.success) {
+            localStorage.setItem('user', JSON.stringify(response.data));
+            localStorage.setItem('loginTime', new Date().toISOString());
+            this.router.navigate(['/customer-dashboard']);
+          } else {
+            this.errorMessage = response.message || 'OTP verification failed.';
+          }
+          this.isLoading = false;
+        },
+        error: (error) => {
+          this.isLoading = false;
+          this.errorMessage = error.error?.message || 'Invalid OTP. Please try again.';
+        }
+      });
+    } else {
+      this.errorMessage = 'Please enter the OTP received in your email.';
     }
   }
 
