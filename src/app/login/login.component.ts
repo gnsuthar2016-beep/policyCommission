@@ -60,7 +60,7 @@ export class LoginComponent implements OnInit {
             localStorage.setItem('user', JSON.stringify(response.data));
             // Store login time
             localStorage.setItem('loginTime', new Date().toISOString());
-            // Navigate to dashboard or home page
+            // Navigate to dashboard for password login
             this.router.navigate(['/dashboard']);
           } else {
             this.errorMessage = response.message;

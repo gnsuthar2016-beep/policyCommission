@@ -34,8 +34,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
   sessionDuration: string = '0s';
   private refreshSubscription: Subscription | null = null;
   private closeMenuTimeout: any;
-
-  constructor(private userService: UserService, private router: Router) {}
+showMenu:boolean = true;
+  constructor(private userService: UserService, private router: Router) {
+    this.showMenu = !location.href.includes('customer-dashboard');
+  }
 
   ngOnInit(): void {
     this.loadUserDetails();

@@ -1,0 +1,98 @@
+<div class="customer-dashboard-page">
+  <div class="dashboard-shell">
+    <div class="hero-card">
+      <div>
+        <p class="eyebrow">Customer portal</p>
+        <h1>Welcome back, {{ customerName }}</h1>
+        <p class="subtitle">Your policies and documents are listed here for quick review.</p>
+      </div>
+      <!-- <button class="logout-btn" type="button" (click)="logout()">Logout</button> -->
+    </div>
+
+    <div class="loading-state" *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Loading your dashboard details...</p>
+    </div>
+
+    <div class="error-state" *ngIf="errorMessage && !loading">
+      <p>{{ errorMessage }}</p>
+    </div>
+
+    <div class="summary-grid" *ngIf="!loading && !errorMessage">
+      <div class="summary-card accent-blue">
+        <span class="summary-label">Policies</span>
+        <strong>{{ summary.policies }}</strong>
+      </div>
+      <div class="summary-card accent-green">
+        <span class="summary-label">Documents</span>
+        <strong>{{ summary.documents }}</strong>
+      </div>
+      <div class="summary-card accent-gold">
+        <span class="summary-label">Expiring soon</span>
+        <strong>{{ summary.expiringSoon }}</strong>
+      </div>
+    </div>
+
+    <div class="content-grid" *ngIf="!loading && !errorMessage">
+      <section class="section-card">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Coverage overview</p>
+            <h3>Your policies</h3>
+          </div>
+          <span class="pill">{{ policies.length }} total</span>
+        </div>
+
+        <div class="empty-state" *ngIf="policies.length === 0">
+          <p>No policies were found for this customer yet.</p>
+        </div>
+
+        <div class="policy-list" *ngIf="policies.length > 0">
+          <article class="policy-card" *ngFor="let policy of policies">
+            <div class="policy-card-top">
+              <h4>{{ policy.policyNumber || 'Policy' }}</h4>
+              <span class="status-badge" [class.warning]="isExpiringSoon(policy.periodTo)">
+                {{ isExpiringSoon(policy.periodTo) ? 'Expiring soon' : 'Active' }}
+              </span>
+            </div>
+            <p class="policy-name">{{ policy.productName || policy.policyType || 'Insurance policy' }}</p>
+            <div class="policy-meta">
+              <div>
+                <span>Expiry</span>
+                <strong>{{ formatDate(policy.periodTo) }}</strong>
+              </div>
+              <div>
+                <span>Premium</span>
+                <strong>{{ formatCurrency(policy.finalPremium || policy.netPremium) }}</strong>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Secure records</p>
+            <h3>Customer documents</h3>
+          </div>
+          <span class="pill">{{ documents.length }} files</span>
+        </div>
+
+        <div class="empty-state" *ngIf="documents.length === 0">
+          <p>No documents are available for this customer yet.</p>
+        </div>
+
+        <div class="document-list" *ngIf="documents.length > 0">
+          <div class="document-item" *ngFor="let document of documents">
+            <div class="document-icon">📄</div>
+            <div class="document-details">
+              <h4>{{ document.fileName || 'Unnamed document' }}</h4>
+              <p>{{ document.documentType || 'Document' }} • {{ formatDate(document.uploadDate) }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>

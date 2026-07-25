@@ -5,6 +5,8 @@ import { RegisterComponent } from './register/register.component';
 import { ForgotPasswordComponent } from './forgot-password/forgot-password.component';
 import { ChangePasswordComponent } from './change-password/change-password.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
+import { OtpLoginComponent } from './otp-login/otp-login.component';
+import { CustomerDashboardComponent } from './customer-dashboard/customer-dashboard.component';
 import { PolicyListComponent } from './policy-list/policy-list.component';
 import { PolicyPurchaseDetailsComponent } from './policy-purchase-details/policy-purchase-details.component';
 import { MiscMasterComponent } from './misc-master/misc-master.component';
@@ -15,6 +17,8 @@ import { ReferenceFormComponent } from './reference-master/reference-form.compon
 
 const routes: Routes = [
   { path: '', component: LoginComponent },
+  { path: 'otp-login', component: OtpLoginComponent },
+  { path: 'customer-dashboard', component: CustomerDashboardComponent },
   { path: 'dashboard', component: DashboardComponent },
   { path: 'policies', component: PolicyListComponent },
   { path: 'policies/new', component: PolicyPurchaseDetailsComponent },

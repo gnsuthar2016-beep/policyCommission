@@ -1,0 +1,57 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="brand">
+      <div class="logo-container">
+        <div class="logo">OTP</div>
+      </div>
+      <div class="brand-text">
+        <h1>OTP Login</h1>
+        <p>Sign in using a one-time password</p>
+      </div>
+    </div>
+
+    <div class="error" *ngIf="errorMessage">
+      <span class="error-icon">⚠️</span>
+      {{ errorMessage }}
+    </div>
+
+    <div class="success" *ngIf="successMessage">
+      <span class="error-icon">✅</span>
+      {{ successMessage }}
+    </div>
+
+    <form [formGroup]="form" novalidate>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input id="email" type="email" formControlName="email" placeholder="you@example.com" />
+        <div class="error-text" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
+          Enter a valid email.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <button class="btn-primary" type="button" (click)="sendOtp()" [disabled]="isLoading">
+          {{ isLoading ? 'Sending...' : 'Send OTP' }}
+        </button>
+      </div>
+
+      <div class="form-group" *ngIf="otpSent">
+        <label for="otp">OTP</label>
+        <input id="otp" type="text" formControlName="otp" placeholder="Enter 6-digit OTP" maxlength="6" />
+        <div class="error-text" *ngIf="form.get('otp')?.touched && form.get('otp')?.invalid">
+          Enter a valid 6-digit OTP.
+        </div>
+      </div>
+
+      <div class="form-group" *ngIf="otpSent">
+        <button class="btn-primary" type="button" (click)="verifyOtp()" [disabled]="isLoading">
+          {{ isLoading ? 'Verifying...' : 'Verify OTP & Login' }}
+        </button>
+      </div>
+    </form>
+
+    <div class="links">
+      <a (click)="goTo('')" class="link-item">Back to password login</a>
+    </div>
+  </div>
+</div>

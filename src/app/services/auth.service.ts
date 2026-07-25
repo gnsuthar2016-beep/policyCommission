@@ -7,6 +7,16 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface OtpSendRequest {
+  email: string;
+}
+
+export interface OtpVerifyRequest {
+  email: string;
+  otp: string;
+  password?: string;
+}
+
 export interface LoginResponse {
   success: boolean;
   message: string;
@@ -26,12 +36,22 @@ export interface LogoutResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'https://policy-api.alluresofttech.com/api';
+  private apiUrl = window.location.hostname === 'localhost'
+    ? 'http://localhost:3000/api'
+    : 'https://policy-api.alluresofttech.com/api';
 
   constructor(private http: HttpClient) { }
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, credentials);
+  }
+
+  sendOtp(payload: OtpSendRequest): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/otp/send`, payload);
+  }
+
+  verifyOtp(payload: OtpVerifyRequest): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/otp/verify`, payload);
   }
 
   logout(): Observable<LogoutResponse> {
