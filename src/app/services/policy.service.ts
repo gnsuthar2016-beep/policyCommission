@@ -99,10 +99,13 @@ export class PolicyService {
       params: { email }
     });
   }
-
-  searchPolicies(searchCriteria: any = {}, page: number = 1, limit: number = 10): Observable<any> {
+  searchPolicies(searchCriteria: any = {}, page: number = 1, limit: number = 10, exact: boolean = false): Observable<any> {
     const payload = { ...searchCriteria, page, limit };
-    return this.http.post<any>(`${this.apiUrl}/policies/search`, payload);
+    const params: any = {};
+    if (exact) {
+      params.exact = true;
+    }
+    return this.http.post<any>(`${this.apiUrl}/policies/search`, payload, { params });
   }
 
   deletePolicy(policyId: number): Observable<any> {

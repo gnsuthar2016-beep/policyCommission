@@ -114,9 +114,12 @@
         <div class="form-group">
           <label for="policyNumber">Policy Number <span class="required">*</span></label>
           <input type="text" id="policyNumber" formControlName="policyNumber" class="form-control" 
-                 placeholder="Enter policy number">
+                 placeholder="Enter policy number" (blur)="onPolicyNumberBlur()">
           <div class="error-message" *ngIf="form.get('policyNumber')?.touched && form.get('policyNumber')?.invalid">
             {{ getErrorMessage('policyNumber') }}
+          </div>
+          <div class="error-message" *ngIf="policyNumberWarning">
+            {{ policyNumberWarning }}
           </div>
         </div>
 
