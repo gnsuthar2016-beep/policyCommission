@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Policy Portal",
+    "slug": "policy-portal",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.alluresofttech.policyportal"
+    },
+    "android": {
+      "package": "com.alluresofttech.policyportal",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8551e502-4b25-4df7-b0d4-0b4635e47852"
+      }
+    },
+    "owner": "chirag4430"
+  }
+}
