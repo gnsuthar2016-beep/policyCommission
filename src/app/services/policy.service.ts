@@ -99,6 +99,7 @@ export class PolicyService {
       params: { email }
     });
   }
+  // Search policies by structured criteria; supports pagination and exact match
   searchPolicies(searchCriteria: any = {}, page: number = 1, limit: number = 10, exact: boolean = false): Observable<any> {
     const payload = { ...searchCriteria, page, limit };
     const params: any = {};
