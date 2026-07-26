@@ -1,0 +1,17 @@
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#f5f7ff,#eef4ff)}
+.auth-card{width:min(100%,420px);background:#fff;border-radius:20px;padding:32px;box-shadow:0 24px 60px rgba(15,23,42,.12)}
+.brand{display:flex;align-items:center;gap:16px;margin-bottom:24px}
+.logo-container{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#2563eb,#4f46e5);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem}
+.brand-text h1{margin:0;font-size:1.5rem}
+.brand-text p{margin:6px 0 0;color:#64748b}
+.form-group{margin-bottom:16px}
+label{display:block;margin-bottom:8px;font-weight:600;color:#334155}
+input{width:100%;padding:12px 14px;border:1px solid #cbd5e1;border-radius:10px;font-size:1rem;box-sizing:border-box}
+input:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.btn-primary{width:100%;padding:12px 16px;border:none;border-radius:10px;background:linear-gradient(135deg,#2563eb,#4f46e5);color:#fff;font-weight:600;cursor:pointer}
+.btn-primary:disabled{opacity:.7;cursor:not-allowed}
+.error{margin-bottom:14px;padding:12px;border-radius:10px;background:#fee2e2;color:#b91c1c;display:flex;gap:8px;align-items:center}
+.success{margin-bottom:14px;padding:12px;border-radius:10px;background:#dcfce7;color:#166534;display:flex;gap:8px;align-items:center}
+.error-text{margin-top:6px;color:#dc2626;font-size:.9rem}
+.links{margin-top:18px;text-align:center}
+.link-item{color:#2563eb;cursor:pointer;text-decoration:none}

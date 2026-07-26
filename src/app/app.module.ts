@@ -11,6 +11,8 @@ import { RegisterComponent } from './register/register.component';
 import { ForgotPasswordComponent } from './forgot-password/forgot-password.component';
 import { ChangePasswordComponent } from './change-password/change-password.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
+import { OtpLoginComponent } from './otp-login/otp-login.component';
+import { CustomerDashboardComponent } from './customer-dashboard/customer-dashboard.component';
 import { HeaderComponent } from './header/header.component';
 import { PolicyPurchaseDetailsComponent } from './policy-purchase-details/policy-purchase-details.component';
 import { PolicyListComponent } from './policy-list/policy-list.component';
@@ -30,6 +32,8 @@ import { LoaderInterceptor } from './interceptors/loader.interceptor';
     RegisterComponent,
     ForgotPasswordComponent,
     DashboardComponent,
+    OtpLoginComponent,
+    CustomerDashboardComponent,
     ChangePasswordComponent,
     HeaderComponent,
     PolicyPurchaseDetailsComponent,

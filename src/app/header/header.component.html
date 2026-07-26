@@ -12,7 +12,7 @@
     </button>
 
     <!-- Desktop Navigation -->
-    <div class="header-nav desktop-nav">
+    <div class="header-nav desktop-nav" *ngIf="showMenu">
       <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">Dashboard</a>
       <a routerLink="/policies" routerLinkActive="active" class="nav-link">Policies</a>
       <a routerLink="/customer-master" routerLinkActive="active" class="nav-link">Customers</a>

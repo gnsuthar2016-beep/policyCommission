@@ -9,6 +9,7 @@ const router = express.Router();
 const Customer = require('../models/Customer');
 const CustomerDocument = require('../models/CustomerDocument');
 const BirthdayTemplate = require('../models/BirthdayTemplate');
+const Policy = require('../models/Policy');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -323,6 +324,75 @@ router.get('/api/customer', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching Customers: ' + error.message
+    });
+  }
+});
+
+// Get customer dashboard details by email
+router.get('/api/customer/dashboard', async (req, res) => {
+  try {
+    const email = req.query.email ? String(req.query.email).trim() : '';
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer email is required'
+      });
+    }
+
+    const customer = await Customer.findOne({
+      where: {
+        emailId: { [Op.iLike]: email }
+      }
+    });
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found for this email'
+      });
+    }
+
+    const customerName = customer.name ? String(customer.name).trim() : '';
+    const policyWhere = customerName
+      ? {
+          customerName: { [Op.iLike]: `%${customerName}%` }
+        }
+      : {};
+
+    const [policies, documents] = await Promise.all([
+      Policy.findAll({
+        where: policyWhere,
+        include: [
+          {
+            model: require('../models/Document'),
+            as: 'documents',
+            attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate', 'filePath', 'cloudinaryPublicId']
+          }
+        ],
+        order: [['periodTo', 'ASC']]
+      }),
+      CustomerDocument.findAll({
+        where: { customerId: customer.id },
+        order: [['uploadDate', 'DESC']]
+      })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: 'Customer dashboard data fetched successfully',
+      data: {
+        customer,
+        policies,
+        documents
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching customer dashboard:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching customer dashboard',
+      error: error.message
     });
   }
 });
