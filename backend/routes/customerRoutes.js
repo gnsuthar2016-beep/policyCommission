@@ -665,7 +665,8 @@ router.post('/api/birthday-templates', templateUpload.single('templateImage'), a
       return res.status(400).json({ success: false, message: 'Template image file is required' });
     }
 
-    const url = `/assets/birthday-templates/${req.file.filename}`;
+    const hostUrl = `${req.protocol}://${req.get('host')}`;
+    const url = `${hostUrl}/assets/birthday-templates/${req.file.filename}`;
 
     const template = await BirthdayTemplate.create({
       title: req.body.title || null,

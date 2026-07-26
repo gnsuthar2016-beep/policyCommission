@@ -40,6 +40,9 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Serve uploaded birthday template assets from the backend
+app.use('/assets', express.static(path.join(__dirname, '..', 'src', 'assets')));
+
 // Routes
 app.use(policyRoutes);
 app.use(miscMasterRoutes);
