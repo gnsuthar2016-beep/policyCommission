@@ -23,6 +23,7 @@
       </div>
       <div class="filter-actions">
         <button type="button" class="btn btn-primary" (click)="generateReport()">Generate Report</button>
+        <button type="button" class="btn btn-secondary" (click)="exportReportToPdf()" *ngIf="reportData.length > 0">Export PDF</button>
       </div>
     </div>
 

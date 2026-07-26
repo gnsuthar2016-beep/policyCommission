@@ -48,6 +48,8 @@
 .filter-actions {
   display: flex;
   justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .btn {
   border: none;
@@ -57,6 +59,11 @@
 .btn-primary {
   background: #2563eb;
   color: #ffffff;
+  padding: 10px 18px;
+}
+.btn-secondary {
+  background: #e2e8f0;
+  color: #0f172a;
   padding: 10px 18px;
 }
 .error-message {
