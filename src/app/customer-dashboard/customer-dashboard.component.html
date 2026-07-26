@@ -66,6 +66,16 @@
                 <strong>{{ formatCurrency(policy.finalPremium || policy.netPremium) }}</strong>
               </div>
             </div>
+
+            <div class="policy-documents" *ngIf="policyDocuments(policy).length > 0">
+              <p class="policy-documents-title">Uploaded policy document</p>
+              <ul>
+                <li *ngFor="let doc of policyDocuments(policy)">
+                  <span>{{ doc.fileName || 'Policy document' }}</span>
+                  <button type="button" class="view-link" (click)="viewDocument(doc)">View</button>
+                </li>
+              </ul>
+            </div>
           </article>
         </div>
       </section>
@@ -79,12 +89,12 @@
           <span class="pill">{{ documents.length }} files</span>
         </div>
 
-        <div class="empty-state" *ngIf="documents.length === 0">
-          <p>No documents are available for this customer yet.</p>
+        <div class="empty-state" *ngIf="otherDocuments.length === 0">
+          <p>No non-policy documents are available for this customer yet.</p>
         </div>
 
-        <div class="document-list" *ngIf="documents.length > 0">
-          <div class="document-item" *ngFor="let document of documents">
+        <div class="document-list" *ngIf="otherDocuments.length > 0">
+          <div class="document-item" *ngFor="let document of otherDocuments">
             <div class="document-icon">📄</div>
             <div class="document-details">
               <h4>{{ document.fileName || 'Unnamed document' }}</h4>

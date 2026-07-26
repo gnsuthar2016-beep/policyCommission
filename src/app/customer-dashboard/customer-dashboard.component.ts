@@ -113,6 +113,27 @@ export class CustomerDashboardComponent implements OnInit {
     });
   }
 
+  policyDocuments(policy: any): any[] {
+    return (policy?.documents || []).filter((doc: any) =>
+      String(doc.documentType || '').toUpperCase() === 'POLICY'
+    );
+  }
+
+  get otherDocuments(): any[] {
+    return (this.documents || []).filter((doc: any) =>
+      String(doc.documentType || '').toUpperCase() !== 'POLICY'
+    );
+  }
+
+  viewDocument(document: any): void {
+    if (document?.filePath) {
+      window.open(document.filePath, '_blank');
+      return;
+    }
+
+    alert(`Document: ${document?.fileName || 'Untitled'}\nType: ${document?.documentType || 'Unknown'}\nSize: ${document?.fileSize || 'Unknown'}\n\nNo preview URL is available.`);
+  }
+
   logout(): void {
     localStorage.removeItem('user');
     localStorage.removeItem('loginTime');

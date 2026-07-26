@@ -1,4 +1,22 @@
 <div class="dashboard-container">
+
+<!-- Summary Stats -->
+  <div class="stats-section" *ngIf="!loading && dailyChartData.length > 0">
+    <div class="stat-card">
+      <h3>Total Commission</h3>
+      <p class="stat-value">₹{{ (dailyChartData | reduce: 'commission') | number:'1.2-2' }}</p>
+    </div>
+    <div class="stat-card">
+      <h3>Total Collection</h3>
+      <p class="stat-value">₹{{ (dailyChartData | reduce: 'collection') | number:'1.2-2' }}</p>
+    </div>
+    <div class="stat-card">
+      <h3>Today's Entries</h3>
+      <p class="stat-value">{{ todayEntriesCount }}</p>
+    </div>
+  </div>
+  <br>
+
   <!-- Header Section -->
   <div class="dashboard-header">
     <h1>Commission Dashboard</h1>
@@ -78,21 +96,7 @@
     </div>
   </div>
 
-  <!-- Summary Stats -->
-  <div class="stats-section" *ngIf="!loading && dailyChartData.length > 0">
-    <div class="stat-card">
-      <h3>Total Commission</h3>
-      <p class="stat-value">₹{{ (dailyChartData | reduce: 'commission') | number:'1.2-2' }}</p>
-    </div>
-    <div class="stat-card">
-      <h3>Total Collection</h3>
-      <p class="stat-value">₹{{ (dailyChartData | reduce: 'collection') | number:'1.2-2' }}</p>
-    </div>
-    <div class="stat-card">
-      <h3>Today's Entries</h3>
-      <p class="stat-value">{{ todayEntriesCount }}</p>
-    </div>
-  </div>
+  
 
   <!-- Renewal List Section -->
   <div class="renewal-section" *ngIf="renewalPolicies.length > 0">
