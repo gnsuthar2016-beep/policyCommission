@@ -1,0 +1,9 @@
+.reports-page { padding: 24px; }
+.reports-header { margin-bottom: 20px; }
+.reports-header h1 { margin: 0 0 8px; font-size: 2rem; }
+.reports-header p { margin: 0; color: #475569; }
+.reports-list { display: grid; gap: 16px; }
+.report-card { display: flex; justify-content: space-between; align-items: center; padding: 18px; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; }
+.report-info h3 { margin: 0 0 6px; font-size: 1.1rem; }
+.report-info p { margin: 0; color: #64748b; }
+.btn-primary { display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; background: #2563eb; color: #fff; border-radius: 999px; text-decoration: none; border: none; cursor: pointer; }

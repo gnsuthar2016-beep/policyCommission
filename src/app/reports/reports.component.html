@@ -1,0 +1,16 @@
+<div class="reports-page">
+  <div class="reports-header">
+    <h1>Reports</h1>
+    <p>Select a report type to review.</p>
+  </div>
+
+  <div class="reports-list">
+    <div class="report-card" *ngFor="let report of reports">
+      <div class="report-info">
+        <h3>{{ report.title }}</h3>
+        <p>{{ report.description }}</p>
+      </div>
+      <a [routerLink]="[report.route]" class="btn btn-primary">Open</a>
+    </div>
+  </div>
+</div>

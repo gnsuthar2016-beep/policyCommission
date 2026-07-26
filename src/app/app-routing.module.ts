@@ -31,6 +31,7 @@ const routes: Routes = [
   { path: 'reference-master', component: ReferenceMasterComponent },
   { path: 'reference-master/add', component: ReferenceFormComponent },
   { path: 'reference-master/edit/:id', component: ReferenceFormComponent },
+  { path: 'reports', loadChildren: () => import('./reports/reports.module').then(m => m.ReportsModule) },
   { path: 'register', component: RegisterComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'change-password', component: ChangePasswordComponent },

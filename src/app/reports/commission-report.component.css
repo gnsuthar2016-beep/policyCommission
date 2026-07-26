@@ -1,0 +1,119 @@
+.commission-report-page {
+  padding: 24px;
+}
+.report-header {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.report-header h1 {
+  margin: 0 0 10px;
+  font-size: 1.8rem;
+}
+.report-header p {
+  margin: 0;
+  color: #64748b;
+}
+.report-filters {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.filter-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.filter-field label {
+  font-weight: 600;
+  color: #334155;
+}
+.filter-field input,
+.filter-field select {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.filter-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+.btn {
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.btn-primary {
+  background: #2563eb;
+  color: #ffffff;
+  padding: 10px 18px;
+}
+.error-message {
+  margin-top: 16px;
+  color: #b91c1c;
+}
+.report-summary {
+  margin-bottom: 16px;
+}
+.summary-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 420px;
+  padding: 18px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+}
+.summary-card span {
+  color: #475569;
+  font-weight: 600;
+}
+.summary-card strong {
+  font-size: 1.5rem;
+}
+.report-table {
+  overflow-x: auto;
+}
+.report-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.report-table th,
+.report-table td {
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+}
+.report-table th {
+  text-align: left;
+  background: #f8fafc;
+  color: #0f172a;
+}
+.report-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+.empty-state,
+.loading-state {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  color: #475569;
+}
+@media (max-width: 900px) {
+  .filter-row {
+    grid-template-columns: 1fr;
+  }
+}

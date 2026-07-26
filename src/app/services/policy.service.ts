@@ -70,6 +70,14 @@ export class PolicyService {
     return this.http.get(url);
   }
 
+  getReferenceCommissionReport(startDate: string, endDate: string, referenceName?: string): Observable<any> {
+    const params: any = { startDate, endDate };
+    if (referenceName) {
+      params.referenceName = referenceName;
+    }
+    return this.http.get<any>(`${this.apiUrl}/policies/commission/reference-summary`, { params });
+  }
+
   addDocumentToPolicy(policyId: number, documentData: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/policy/${policyId}/document`, documentData);
   }

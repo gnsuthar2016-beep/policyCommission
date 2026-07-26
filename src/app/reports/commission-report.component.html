@@ -1,0 +1,63 @@
+<div class="commission-report-page">
+  <div class="report-header">
+    <h1>Commission Report</h1>
+    <p>View reference-wise commission totals for the selected date range.</p>
+  </div>
+
+  <div class="report-filters">
+    <div class="filter-row">
+      <div class="filter-field">
+        <label for="fromDate">From Date</label>
+        <input id="fromDate" type="date" [(ngModel)]="startDate" />
+      </div>
+      <div class="filter-field">
+        <label for="toDate">To Date</label>
+        <input id="toDate" type="date" [(ngModel)]="endDate" />
+      </div>
+      <div class="filter-field">
+        <label for="referenceName">Reference Name</label>
+        <select id="referenceName" [(ngModel)]="selectedReferenceName">
+          <option value="">All References</option>
+          <option *ngFor="let ref of referenceNames" [value]="ref">{{ ref }}</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="button" class="btn btn-primary" (click)="generateReport()">Generate Report</button>
+      </div>
+    </div>
+
+    <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
+  </div>
+
+  <div class="report-summary" *ngIf="!loading && reportData.length > 0">
+    <div class="summary-card">
+      <span>Total Commission</span>
+      <strong>₹{{ totalCommission }}</strong>
+    </div>
+  </div>
+
+  <div class="report-table" *ngIf="reportData.length > 0">
+    <table>
+      <thead>
+        <tr>
+          <th>Reference Name</th>
+          <th>Commission Amount (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of reportData">
+          <td>{{ row.referenceName }}</td>
+          <td>{{ row.commission }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && reportData.length === 0 && !errorMessage">
+    <p>No commission data found for the selected period.</p>
+  </div>
+
+  <div class="loading-state" *ngIf="loading">
+    <p>Generating report...</p>
+  </div>
+</div>

@@ -1136,6 +1136,78 @@ router.get('/api/policies/commission/monthly/:year', async (req, res) => {
   }
 });
 
+// Get reference-wise commission totals for a date range
+router.get('/api/policies/commission/reference-summary', async (req, res) => {
+  try {
+    const { startDate, endDate, referenceName } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'startDate and endDate are required query parameters'
+      });
+    }
+
+    const parsedStartDate = new Date(String(startDate));
+    const parsedEndDate = new Date(String(endDate));
+
+    if (Number.isNaN(parsedStartDate.getTime()) || Number.isNaN(parsedEndDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format for startDate or endDate. Use YYYY-MM-DD.'
+      });
+    }
+
+    const endDateInclusive = new Date(parsedEndDate);
+    endDateInclusive.setHours(23, 59, 59, 999);
+
+    let query = `
+      SELECT "referenceName",
+             COALESCE(SUM("refBrokerageAmount"), 0)::numeric as commission
+      FROM "policies"
+      WHERE "createdAt" >= :startDate
+        AND "createdAt" <= :endDate
+    `;
+
+    const replacements = {
+      startDate: parsedStartDate.toISOString(),
+      endDate: endDateInclusive.toISOString()
+    };
+
+    if (referenceName) {
+      query += ` AND "referenceName" = :referenceName`;
+      replacements.referenceName = String(referenceName);
+    }
+
+    query += ` GROUP BY "referenceName"
+               ORDER BY commission DESC`;
+
+    const results = await Policy.sequelize.query(query, {
+      replacements,
+      type: QueryTypes.SELECT,
+      raw: true
+    });
+
+    const normalizedResults = results.map((row) => ({
+      referenceName: row.referenceName || 'Unknown',
+      commission: parseFloat(row.commission || 0).toFixed(2)
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: 'Reference-wise commission summary fetched successfully',
+      data: normalizedResults
+    });
+  } catch (error) {
+    console.error('Error fetching reference commission summary:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching reference commission summary',
+      error: error.message
+    });
+  }
+});
+
 // Get policies by month (optional filter by reference name)
 router.get('/api/policies/month/:year/:month', async (req, res) => {
   try {
