@@ -31,6 +31,13 @@ h1{margin:0;font-size:2rem;color:#0f172a}
 .policy-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .policy-meta div{display:flex;flex-direction:column;gap:4px}
 .policy-meta span{font-size:.75rem;text-transform:uppercase;letter-spacing:.16em;color:#64748b;font-weight:700}
+.policy-documents ul,
+.document-list{display:flex;flex-direction:column;gap:12px}
+.policy-documents li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border:1px solid #e2e8f0;border-radius:14px;background:#fff}
+.policy-documents span{color:#0f172a;font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.view-icon-button{width:38px;height:38px;border:none;border-radius:50%;background:#2563eb;color:#fff;display:grid;place-items:center;cursor:pointer;transition:transform .15s ease,background .15s ease}
+.view-icon-button:hover{transform:scale(1.05);background:#1d4ed8}
+.view-icon-button:focus{outline:2px solid #93c5fd;outline-offset:2px}
 .document-item{display:flex;align-items:center;gap:12px}
 .document-icon{width:42px;height:42px;border-radius:12px;background:#dbeafe;display:grid;place-items:center;font-size:1.1rem}
 .document-details p{margin:4px 0 0;color:#64748b}

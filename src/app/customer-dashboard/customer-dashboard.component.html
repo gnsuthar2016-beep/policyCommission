@@ -68,11 +68,12 @@
             </div>
 
             <div class="policy-documents" *ngIf="policyDocuments(policy).length > 0">
-              <p class="policy-documents-title">Uploaded policy document</p>
               <ul>
                 <li *ngFor="let doc of policyDocuments(policy)">
                   <span>{{ doc.fileName || 'Policy document' }}</span>
-                  <button type="button" class="view-link" (click)="viewDocument(doc)">View</button>
+                  <button type="button" class="view-icon-button" (click)="viewDocument(doc)" aria-label="View policy document">
+                    👁️
+                  </button>
                 </li>
               </ul>
             </div>
