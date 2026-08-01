@@ -923,37 +923,41 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       uploadDate: new Date().toLocaleString()
     };
 
-    // Check if document type is POLICY and extract details (only for NEW policies, not when editing)
+    // Policy documents should only be uploaded; AI autofill is disabled.
     if (documentType === 'POLICY' && !this.isEditMode) {
-      this.policyExtractionLoading = true;
-      this.documentUploadError = 'Extracting policy details from document...';
-      this.policyDocumentExtractService.extractPolicyDetails(file).subscribe({
-        next: (response) => {
-          this.policyExtractionLoading = false;
-          documentEntry.file = file;
-          this.documents.push(documentEntry);
-          this.documentForm.reset();
-          fileInput.value = '';
+      // Disabled: auto-fill extraction API call
+      // this.policyDocumentExtractService.extractPolicyDetails(file).subscribe({
+      //   next: (response) => {
+      //     this.policyExtractionLoading = false;
+      //     documentEntry.file = file;
+      //     this.documents.push(documentEntry);
+      //     this.documentForm.reset();
+      //     fileInput.value = '';
+      //
+      //     if (response && response.success) {
+      //       this.autoFillPolicyDetailsFromExtraction(response);
+      //       this.documentUploadError = '';
+      //     } else {
+      //       this.documentUploadError = 'Could not extract policy details. Document is uploaded and you can enter details manually.';
+      //       console.warn('Extraction failed or returned no data:', response);
+      //     }
+      //   },
+      //   error: (error) => {
+      //     this.policyExtractionLoading = false;
+      //     documentEntry.file = file;
+      //     this.documents.push(documentEntry);
+      //     this.documentForm.reset();
+      //     fileInput.value = '';
+      //     this.documentUploadError = 'Error extracting policy details. Document is uploaded and you can enter details manually.';
+      //     console.error('Error extracting policy details:', error);
+      //   }
+      // });
 
-          if (response && response.success) {
-            // Auto-fill the form with extracted data
-            this.autoFillPolicyDetailsFromExtraction(response);
-            this.documentUploadError = '';
-          } else {
-            this.documentUploadError = 'Could not extract policy details. Document is uploaded and you can enter details manually.';
-            console.warn('Extraction failed or returned no data:', response);
-          }
-        },
-        error: (error) => {
-          this.policyExtractionLoading = false;
-          documentEntry.file = file;
-          this.documents.push(documentEntry);
-          this.documentForm.reset();
-          fileInput.value = '';
-          this.documentUploadError = 'Error extracting policy details. Document is uploaded and you can enter details manually.';
-          console.error('Error extracting policy details:', error);
-        }
-      });
+      documentEntry.file = file;
+      this.documents.push(documentEntry);
+      this.documentForm.reset();
+      fileInput.value = '';
+      this.documentUploadError = '';
       return;
     }
 
