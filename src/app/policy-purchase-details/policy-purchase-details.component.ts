@@ -287,15 +287,14 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
           console.log('Formatted Policy with premiumSource:', formattedPolicy.premiumSource);
           
           this.form.patchValue(formattedPolicy);
-          // this.syncCalculatedPremiumFields();
           
           // Verify premiumSource was set in the form
           console.log('Form premiumSource value after patchValue:', this.form.get('premiumSource')?.value);
           
           // Recalculate derived fields (GST and Final Premium)
-          // this.calculateGstAndFinalPremium();
+          this.calculateGstAndFinalPremium();
           // Recalculate Ref. Brokerage Amount
-          // this.calculateRefBrokerageAmount();
+          this.calculateRefBrokerageAmount();
           // Load documents
           if (policy.documents && Array.isArray(policy.documents)) {
             this.documents = policy.documents.map((doc: any, index: number) => ({
@@ -924,37 +923,41 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       uploadDate: new Date().toLocaleString()
     };
 
-    // Check if document type is POLICY and extract details (only for NEW policies, not when editing)
+    // Policy documents should only be uploaded; AI autofill is disabled.
     if (documentType === 'POLICY' && !this.isEditMode) {
-      this.policyExtractionLoading = true;
-      this.documentUploadError = 'Extracting policy details from document...';
-      this.policyDocumentExtractService.extractPolicyDetails(file).subscribe({
-        next: (response) => {
-          this.policyExtractionLoading = false;
-          documentEntry.file = file;
-          this.documents.push(documentEntry);
-          this.documentForm.reset();
-          fileInput.value = '';
+      // Disabled: auto-fill extraction API call
+      // this.policyDocumentExtractService.extractPolicyDetails(file).subscribe({
+      //   next: (response) => {
+      //     this.policyExtractionLoading = false;
+      //     documentEntry.file = file;
+      //     this.documents.push(documentEntry);
+      //     this.documentForm.reset();
+      //     fileInput.value = '';
+      //
+      //     if (response && response.success) {
+      //       this.autoFillPolicyDetailsFromExtraction(response);
+      //       this.documentUploadError = '';
+      //     } else {
+      //       this.documentUploadError = 'Could not extract policy details. Document is uploaded and you can enter details manually.';
+      //       console.warn('Extraction failed or returned no data:', response);
+      //     }
+      //   },
+      //   error: (error) => {
+      //     this.policyExtractionLoading = false;
+      //     documentEntry.file = file;
+      //     this.documents.push(documentEntry);
+      //     this.documentForm.reset();
+      //     fileInput.value = '';
+      //     this.documentUploadError = 'Error extracting policy details. Document is uploaded and you can enter details manually.';
+      //     console.error('Error extracting policy details:', error);
+      //   }
+      // });
 
-          if (response && response.success) {
-            // Auto-fill the form with extracted data
-            this.autoFillPolicyDetailsFromExtraction(response);
-            this.documentUploadError = '';
-          } else {
-            this.documentUploadError = 'Could not extract policy details. Document is uploaded and you can enter details manually.';
-            console.warn('Extraction failed or returned no data:', response);
-          }
-        },
-        error: (error) => {
-          this.policyExtractionLoading = false;
-          documentEntry.file = file;
-          this.documents.push(documentEntry);
-          this.documentForm.reset();
-          fileInput.value = '';
-          this.documentUploadError = 'Error extracting policy details. Document is uploaded and you can enter details manually.';
-          console.error('Error extracting policy details:', error);
-        }
-      });
+      documentEntry.file = file;
+      this.documents.push(documentEntry);
+      this.documentForm.reset();
+      fileInput.value = '';
+      this.documentUploadError = '';
       return;
     }
 
@@ -1233,25 +1236,22 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
    * Formula: Net Premium = (OD Premium + TP Premium) - [(OD Premium + TP Premium) * NCB% / 100]
    */
   calculateNetPremium(): void {
-    const basicODPremium = parseFloat(this.form.get('basicODPremium')?.value || 0);
-    const tpPremium = parseFloat(this.form.get('tpPremium')?.value || 0);
-    const ncbPercent = parseFloat(this.form.get('ncb')?.value || 0);
+    const basicODPremium = this.form.get('basicODPremium')?.value || 0;
+    const tpPremium = this.form.get('tpPremium')?.value || 0;
+    const ncbPercent = this.form.get('ncb')?.value || 0;
 
     // Calculate total of OD and TP premiums
-    const totalPremium = basicODPremium + tpPremium;
+    const totalPremium = parseFloat(basicODPremium) + parseFloat(tpPremium);
 
     // Calculate NCB amount (NCB percentage of total premium)
-    const ncbAmount = (totalPremium * ncbPercent) / 100;
+    const ncbAmount = (totalPremium * parseFloat(ncbPercent)) / 100;
 
     // Calculate Net Premium (Total - NCB Amount)
     const netPremium = totalPremium - ncbAmount;
 
-    // Update the NCB Amount and Net Premium fields with calculated values
+    // Update the Net Premium field with calculated value (rounded to 2 decimal places)
     this.form.patchValue(
-      {
-        ncbAmount: ncbAmount.toFixed(2),
-        netPremium: netPremium.toFixed(2)
-      },
+      { netPremium: netPremium.toFixed(2) },
       { emitEvent: false }
     );
   }
@@ -1261,12 +1261,12 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
    * Returns the amount deducted based on NCB percentage
    */
   getNcbAmount(): number {
-    const basicODPremium = parseFloat(this.form.get('basicODPremium')?.value || 0);
-    const tpPremium = parseFloat(this.form.get('tpPremium')?.value || 0);
-    const ncbPercent = parseFloat(this.form.get('ncb')?.value || 0);
+    const basicODPremium = this.form.get('basicODPremium')?.value || 0;
+    const tpPremium = this.form.get('tpPremium')?.value || 0;
+    const ncbPercent = this.form.get('ncb')?.value || 0;
 
-    const totalPremium = basicODPremium + tpPremium;
-    const ncbAmount = (totalPremium * ncbPercent) / 100;
+    const totalPremium = parseFloat(basicODPremium) + parseFloat(tpPremium);
+    const ncbAmount = (totalPremium * parseFloat(ncbPercent)) / 100;
 
     return ncbAmount;
   }
@@ -1406,6 +1406,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
       });
     });
 
+    // Auto-fill Period To when Period From changes and Period To is empty or previously auto-filled
     this.form.get('periodFrom')?.valueChanges.subscribe((value) => {
       const periodToControl = this.form.get('periodTo');
       const currentPeriodTo = periodToControl?.value;
@@ -1423,6 +1424,27 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
 
     this.form.get('periodTo')?.valueChanges.subscribe(() => {
       this.periodToAutoFilled = false;
+    });
+
+    // Watch for changes in GST % to update GST Amount and Final Premium
+    this.form.get('gstPercent')?.valueChanges.subscribe(() => {
+      this.calculateGstAndFinalPremium();
+    });
+
+    // Watch for changes in Discount to update GST Amount and Final Premium
+    this.form.get('discount')?.valueChanges.subscribe(() => {
+      this.calculateGstAndFinalPremium();
+      this.calculateRefBrokerageAmount();
+    });
+
+    // Watch for changes in Ref Brokerage % to update Ref. Brokerage Amount
+    this.form.get('refBrokeragePercent')?.valueChanges.subscribe(() => {
+      this.calculateRefBrokerageAmount();
+    });
+
+    // Watch for changes in Premium Source dropdown to update Ref. Brokerage On
+    this.form.get('premiumSource')?.valueChanges.subscribe(() => {
+      this.calculateRefBrokerageAmount();
     });
   }
 }
