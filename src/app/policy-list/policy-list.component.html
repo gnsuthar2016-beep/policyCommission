@@ -4,9 +4,14 @@
       <h1>Policy List</h1>
       <p>Manage all your insurance policies</p>
     </div>
-    <button class="btn btn-add-policy" (click)="addNewPolicy()">
-      ➕ Add New Policy
-    </button>
+    <div class="header-actions">
+      <button class="btn btn-add-policy" (click)="addNewPolicy()">
+        ➕ Add New Policy
+      </button>
+      <button class="btn btn-secondary btn-export" (click)="exportPolicies()" [disabled]="exporting">
+        📥 Export to Excel
+      </button>
+    </div>
   </div>
 
   <!-- Search Section -->

@@ -49,6 +49,11 @@ export class CustomerService {
     return this.http.get<any>(`${this.apiUrl}/customer/${id}`);
   }
 
+  // Download all customers as Excel
+  downloadCustomersExcel(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/customers/export`, { responseType: 'blob' });
+  }
+
   // Delete Customer by ID
   deleteCustomer(id: number): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/customer/${id}`);

@@ -173,8 +173,35 @@ export class PolicyListComponent implements OnInit {
     return criteria.join(', ');
   }
 
+  exporting = false;
+  exportError: string | null = null;
+
   addNewPolicy(): void {
     this.router.navigate(['/policies/new']);
+  }
+
+  exportPolicies(): void {
+    this.exporting = true;
+    this.exportError = null;
+
+    this.policyService.downloadPoliciesExcel().subscribe({
+      next: (blob) => {
+        this.exporting = false;
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'policies.xlsx';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (error) => {
+        console.error('Error exporting policies:', error);
+        this.exporting = false;
+        this.exportError = 'Unable to export policies. Please try again later.';
+      }
+    });
   }
 
   viewPolicy(policyId: number): void {

@@ -566,6 +566,73 @@ router.get('/api/policies', async (req, res) => {
   }
 });
 
+// Export all policies to Excel
+router.get('/api/policies/export', async (req, res) => {
+  try {
+    const policies = await Policy.findAll({
+      include: [
+        {
+          model: Document,
+          as: 'documents',
+          attributes: ['id', 'documentType', 'fileName', 'fileSize', 'uploadDate', 'filePath', 'cloudinaryPublicId']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    const rows = policies.map((policy) => ({
+      id: policy.id,
+      customerName: policy.customerName,
+      policyType: policy.policyType,
+      policyNumber: policy.policyNumber,
+      referenceName: policy.referenceName,
+      insuranceBranch: policy.insuranceBranch || '',
+      companyName: policy.companyName,
+      insuranceType: policy.insuranceType || '',
+      productName: policy.productName,
+      periodFrom: policy.periodFrom ? policy.periodFrom.toISOString().split('T')[0] : '',
+      periodTo: policy.periodTo ? policy.periodTo.toISOString().split('T')[0] : '',
+      policyDate: policy.policyDate ? policy.policyDate.toISOString().split('T')[0] : '',
+      basicODPremium: policy.basicODPremium,
+      tpPremium: policy.tpPremium,
+      ncb: policy.ncb,
+      ncbAmount: policy.ncbAmount,
+      netPremium: policy.netPremium,
+      gstPercent: policy.gstPercent,
+      gstAmount: policy.gstAmount,
+      premiumDiscount: policy.premiumDiscount,
+      finalPremium: policy.finalPremium,
+      refBrokerageOn: policy.refBrokerageOn,
+      premiumSource: policy.premiumSource,
+      refBrokeragePercent: policy.refBrokeragePercent,
+      refBrokerageAmount: policy.refBrokerageAmount,
+      totalIDV: policy.totalIDV,
+      make: policy.make || '',
+      model: policy.model || '',
+      registrationNumber: policy.registrationNumber || '',
+      documentCount: policy.documents ? policy.documents.length : 0,
+      createdAt: policy.createdAt ? policy.createdAt.toISOString() : '',
+      updatedAt: policy.updatedAt ? policy.updatedAt.toISOString() : ''
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Policies');
+    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Disposition', 'attachment; filename="policies.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('Error exporting policies:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error exporting policies',
+      error: error.message
+    });
+  }
+});
+
   // POST search endpoint: search policies by policy fields or by matching customers (customerName/mobileNumber)
   router.post('/api/policies/search', async (req, res) => {
     try {
@@ -1203,6 +1270,86 @@ router.get('/api/policies/commission/reference-summary', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching reference commission summary',
+      error: error.message
+    });
+  }
+});
+
+// Export reference-wise commission summary to Excel
+router.get('/api/policies/commission/reference-summary/export', async (req, res) => {
+  try {
+    const { startDate, endDate, referenceName } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'startDate and endDate are required query parameters'
+      });
+    }
+
+    const parsedStartDate = new Date(String(startDate));
+    const parsedEndDate = new Date(String(endDate));
+
+    if (Number.isNaN(parsedStartDate.getTime()) || Number.isNaN(parsedEndDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format for startDate or endDate. Use YYYY-MM-DD.'
+      });
+    }
+
+    const endDateInclusive = new Date(parsedEndDate);
+    endDateInclusive.setHours(23, 59, 59, 999);
+
+    let query = `
+      SELECT "referenceName",
+             COALESCE(SUM("refBrokerageAmount"), 0)::numeric as commission
+      FROM "policies"
+      WHERE "createdAt" >= :startDate
+        AND "createdAt" <= :endDate
+    `;
+
+    const replacements = {
+      startDate: parsedStartDate.toISOString(),
+      endDate: endDateInclusive.toISOString()
+    };
+
+    if (referenceName) {
+      query += ` AND "referenceName" = :referenceName`;
+      replacements.referenceName = String(referenceName);
+    }
+
+    query += ` GROUP BY "referenceName"
+               ORDER BY commission DESC`;
+
+    const results = await Policy.sequelize.query(query, {
+      replacements,
+      type: QueryTypes.SELECT,
+      raw: true
+    });
+
+    const normalizedResults = results.map((row) => ({
+      referenceName: row.referenceName || 'Unknown',
+      commission: parseFloat(row.commission || 0).toFixed(2)
+    }));
+
+    const rows = normalizedResults.map((row) => ({
+      'Reference Name': row.referenceName,
+      'Commission Amount': row.commission
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Commission Summary');
+    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Disposition', 'attachment; filename="commission-report.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('Error exporting reference commission summary to Excel:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error exporting reference commission summary to Excel',
       error: error.message
     });
   }

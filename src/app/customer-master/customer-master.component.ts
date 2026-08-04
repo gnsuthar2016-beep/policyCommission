@@ -10,6 +10,7 @@ import { CustomerService } from '../services/customer.service';
 export class CustomerMasterComponent implements OnInit {
   customers: any[] = [];
   loading = false;
+  exporting = false;
   searchQuery = '';
   page = 1;
   limit = 10;
@@ -66,6 +67,28 @@ export class CustomerMasterComponent implements OnInit {
   onSearch(): void {
     this.page = 1;
     this.fetchCustomers(true);
+  }
+
+  exportCustomers(): void {
+    this.exporting = true;
+    this.customerService.downloadCustomersExcel().subscribe({
+      next: (blob) => {
+        this.exporting = false;
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'customers.xlsx';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (error) => {
+        console.error('Error exporting customers:', error);
+        this.exporting = false;
+        alert('Unable to export customers. Please try again later.');
+      }
+    });
   }
 
   changePage(newPage: number): void {

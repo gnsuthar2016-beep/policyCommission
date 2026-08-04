@@ -4,7 +4,12 @@
       <h2>Customer Management</h2>
       <p>Use the buttons below to add a customer, import via Excel, or search the customer list.</p>
     </div>
-    <button class="btn btn-add-new" type="button" (click)="addCustomer()">+ Add Customer</button>
+    <div class="header-actions">
+      <button class="btn btn-add-new" type="button" (click)="addCustomer()">+ Add Customer</button>
+      <button class="btn btn-secondary" type="button" (click)="exportCustomers()" [disabled]="exporting">
+        📥 Export to Excel
+      </button>
+    </div>
   </div>
 
   <div class="list-wrapper">

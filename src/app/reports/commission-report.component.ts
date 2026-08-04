@@ -95,6 +95,37 @@ export class CommissionReportComponent implements OnInit {
     return Number.isFinite(parsedValue) ? parsedValue.toFixed(2) : '0.00';
   }
 
+  getExportExcelFileName(): string {
+    const from = this.startDate || 'from-date';
+    const to = this.endDate || 'to-date';
+    return `commission-report-${from}-to-${to}.xlsx`;
+  }
+
+  exportReportToExcel(): void {
+    if (this.reportData.length === 0) {
+      this.errorMessage = 'No report data available to export.';
+      return;
+    }
+
+    this.policyService.downloadCommissionReportExcel(this.startDate, this.endDate, this.selectedReferenceName).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = this.getExportExcelFileName();
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        this.errorMessage = '';
+      },
+      error: (error) => {
+        console.error('Error exporting commission report to Excel:', error);
+        this.errorMessage = error?.error?.message || 'Unable to export report to Excel. Please try again.';
+      }
+    });
+  }
+
   exportReportToPdf(): void {
     if (this.reportData.length === 0) {
       this.errorMessage = 'No report data available to export.';

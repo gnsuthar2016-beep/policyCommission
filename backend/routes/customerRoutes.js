@@ -328,6 +328,41 @@ router.get('/api/customer', async (req, res) => {
   }
 });
 
+// Export all customers to Excel
+router.get('/api/customers/export', async (req, res) => {
+  try {
+    const customers = await Customer.findAll({ order: [['createdAt', 'DESC']] });
+
+    const rows = customers.map((customer) => ({
+      id: customer.id,
+      name: customer.name,
+      mobileNumber: customer.mobileNumber || '',
+      alternativeMobileNumber: customer.alternativeMobileNumber || '',
+      emailId: customer.emailId || '',
+      dateOfBirth: customer.dateOfBirth ? customer.dateOfBirth.toISOString().split('T')[0] : '',
+      remark: customer.remark || '',
+      createdAt: customer.createdAt ? customer.createdAt.toISOString() : '',
+      updatedAt: customer.updatedAt ? customer.updatedAt.toISOString() : ''
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Customers');
+    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Disposition', 'attachment; filename="customers.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('Error exporting customers:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error exporting customers',
+      error: error.message
+    });
+  }
+});
+
 // Get customer dashboard details by email
 router.get('/api/customer/dashboard', async (req, res) => {
   try {

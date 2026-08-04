@@ -28,6 +28,10 @@ export class PolicyService {
     return this.getPolicies(1, 10);
   }
 
+  downloadPoliciesExcel(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/policies/export`, { responseType: 'blob' });
+  }
+
   getPolicies(page?: number, limit?: number, search?: string): Observable<any> {
     const params: any = {};
     if (page != null) {
@@ -76,6 +80,17 @@ export class PolicyService {
       params.referenceName = referenceName;
     }
     return this.http.get<any>(`${this.apiUrl}/policies/commission/reference-summary`, { params });
+  }
+
+  downloadCommissionReportExcel(startDate: string, endDate: string, referenceName?: string): Observable<Blob> {
+    const params: any = { startDate, endDate };
+    if (referenceName) {
+      params.referenceName = referenceName;
+    }
+    return this.http.get(`${this.apiUrl}/policies/commission/reference-summary/export`, {
+      params,
+      responseType: 'blob'
+    });
   }
 
   addDocumentToPolicy(policyId: number, documentData: any): Observable<any> {
