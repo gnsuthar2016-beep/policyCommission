@@ -29,12 +29,16 @@ export class OtpLoginComponent implements OnInit {
   }
 
   sendOtp(): void {
-    if (this.form.get('email')?.valid) {
+    const emailControl = this.form.get('email');
+    const emailValue = String(emailControl?.value || '').trim();
+    emailControl?.setValue(emailValue);
+
+    if (emailControl?.valid) {
       this.isLoading = true;
       this.errorMessage = '';
       this.successMessage = '';
 
-      this.authService.sendOtp({ email: this.form.value.email }).subscribe({
+      this.authService.sendOtp({ email: emailValue }).subscribe({
         next: (response) => {
           this.isLoading = false;
           this.otpSent = true;
@@ -52,14 +56,21 @@ export class OtpLoginComponent implements OnInit {
   }
 
   verifyOtp(): void {
+    const emailControl = this.form.get('email');
+    const otpControl = this.form.get('otp');
+    const emailValue = String(emailControl?.value || '').trim();
+    const otpValue = String(otpControl?.value || '').trim();
+    emailControl?.setValue(emailValue);
+    otpControl?.setValue(otpValue);
+
     if (this.form.valid) {
       this.isLoading = true;
       this.errorMessage = '';
       this.successMessage = '';
 
       this.authService.verifyOtp({
-        email: this.form.value.email,
-        otp: this.form.value.otp
+        email: emailValue,
+        otp: otpValue
       }).subscribe({
         next: (response) => {
           if (response.success) {
@@ -78,6 +89,7 @@ export class OtpLoginComponent implements OnInit {
       });
     } else {
       this.form.markAllAsTouched();
+      this.errorMessage = 'Please enter a valid email and 6-digit OTP.';
     }
   }
 

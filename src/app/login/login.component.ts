@@ -100,15 +100,30 @@ export class LoginComponent implements OnInit {
     this.otpSent = false;
     this.generatedOtp = '';
     this.form.get('otp')?.setValue('');
+
+    if (mode === 'admin') {
+      this.form.get('password')?.setValidators([Validators.required, Validators.minLength(6)]);
+      this.form.get('otp')?.clearValidators();
+      this.form.get('otp')?.updateValueAndValidity();
+    } else {
+      this.form.get('password')?.clearValidators();
+      this.form.get('password')?.updateValueAndValidity();
+      this.form.get('otp')?.clearValidators();
+      this.form.get('otp')?.updateValueAndValidity();
+    }
   }
 
   sendOtp(): void {
-    if (this.form.get('email')?.valid) {
+    const emailControl = this.form.get('email');
+    const emailValue = String(emailControl?.value || '').trim();
+    emailControl?.setValue(emailValue);
+
+    if (emailControl?.valid) {
       this.isLoading = true;
       this.errorMessage = '';
       this.successMessage = '';
 
-      this.authService.sendOtp({ email: this.form.value.email }).subscribe({
+      this.authService.sendOtp({ email: emailValue }).subscribe({
         next: (response) => {
           this.isLoading = false;
           this.otpSent = true;
@@ -116,6 +131,8 @@ export class LoginComponent implements OnInit {
           this.generatedOtp = otpFromResponse || '';
           this.successMessage = response.message || 'OTP sent successfully. Please check your inbox.';
           this.form.get('otp')?.setValue('');
+          this.form.get('otp')?.setValidators([Validators.required, Validators.minLength(6), Validators.maxLength(6)]);
+          this.form.get('otp')?.updateValueAndValidity();
         },
         error: (error) => {
           this.isLoading = false;
@@ -133,14 +150,22 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    if (this.form.valid && this.form.get('otp')?.value) {
+    const emailControl = this.form.get('email');
+    const otpControl = this.form.get('otp');
+    const emailValue = String(emailControl?.value || '').trim();
+    const otpValue = String(otpControl?.value || '').trim();
+
+    emailControl?.setValue(emailValue);
+    otpControl?.setValue(otpValue);
+
+    if (emailControl?.valid && otpControl?.valid) {
       this.isLoading = true;
       this.errorMessage = '';
       this.successMessage = '';
 
       this.authService.verifyOtp({
-        email: this.form.value.email,
-        otp: this.form.value.otp
+        email: emailValue,
+        otp: otpValue
       }).subscribe({
         next: (response) => {
           if (response.success) {
@@ -158,7 +183,14 @@ export class LoginComponent implements OnInit {
         }
       });
     } else {
-      this.errorMessage = 'Please enter the OTP received in your email.';
+      if (!emailControl?.valid) {
+        this.errorMessage = 'Please enter a valid email.';
+      } else if (!otpControl?.value || otpValue.length === 0) {
+        this.errorMessage = 'Please enter the OTP received in your email.';
+      } else {
+        this.errorMessage = 'Please enter a valid 6-digit OTP.';
+      }
+      otpControl?.markAsTouched();
     }
   }
 
