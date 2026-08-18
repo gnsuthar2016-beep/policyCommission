@@ -1355,6 +1355,107 @@ router.get('/api/policies/commission/reference-summary/export', async (req, res)
   }
 });
 
+// Export selected reference policy details for the selected date range
+router.get('/api/policies/commission/reference-details/export', async (req, res) => {
+  try {
+    const { startDate, endDate, referenceName } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'startDate and endDate are required query parameters'
+      });
+    }
+
+    const normalizedReferenceName = String(referenceName || '').trim();
+    if (!normalizedReferenceName || normalizedReferenceName.toLowerCase() === 'all references') {
+      return res.status(400).json({
+        success: false,
+        message: 'A specific referenceName is required to export policy details.'
+      });
+    }
+
+    const parsedStartDate = new Date(String(startDate));
+    const parsedEndDate = new Date(String(endDate));
+
+    if (Number.isNaN(parsedStartDate.getTime()) || Number.isNaN(parsedEndDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format for startDate or endDate. Use YYYY-MM-DD.'
+      });
+    }
+
+    const endDateInclusive = new Date(parsedEndDate);
+    endDateInclusive.setHours(23, 59, 59, 999);
+
+    const query = `
+      SELECT
+        TO_CHAR("periodFrom"::date, 'YYYY-MM-DD') AS "periodFrom",
+        TO_CHAR("periodTo"::date, 'YYYY-MM-DD') AS "periodTo",
+        "referenceName",
+        "policyNumber",
+        "registrationNumber",
+        "make",
+        "model",
+        "ncb",
+        "totalIDV" AS "IDV",
+        "basicODPremium" AS "OD premium",
+        "tpPremium" AS "TP Premium",
+        "netPremium" AS "Net premium",
+        "refBrokeragePercent" AS "Ref brokerage %",
+        "refBrokerageAmount" AS "Ref. Brokerage Amount"
+      FROM "policies"
+      WHERE "createdAt" >= :startDate
+        AND "createdAt" <= :endDate
+        AND "referenceName" = :referenceName
+      ORDER BY "createdAt" DESC
+    `;
+
+    const results = await Policy.sequelize.query(query, {
+      replacements: {
+        startDate: parsedStartDate.toISOString(),
+        endDate: endDateInclusive.toISOString(),
+        referenceName: normalizedReferenceName
+      },
+      type: QueryTypes.SELECT,
+      raw: true
+    });
+
+    const rows = results.map((row) => ({
+      'period From': row.periodFrom || '',
+      'period to': row.periodTo || '',
+      'reference name': row.referenceName || '',
+      'policy number': row.policyNumber || '',
+      'registration number': row.registrationNumber || '',
+      make: row.make || '',
+      model: row.model || '',
+      NCB: row.ncb != null ? Number(row.ncb).toFixed(2) : '',
+      IDV: row.IDV != null ? Number(row.IDV).toFixed(2) : '',
+      'OD premium': row['OD premium'] != null ? Number(row['OD premium']).toFixed(2) : '',
+      'TP Premium': row['TP Premium'] != null ? Number(row['TP Premium']).toFixed(2) : '',
+      'Net premium': row['Net premium'] != null ? Number(row['Net premium']).toFixed(2) : '',
+      'Ref brokerage %': row['Ref brokerage %'] != null ? Number(row['Ref brokerage %']).toFixed(2) : '',
+      'Ref. Brokerage Amount': row['Ref. Brokerage Amount'] != null ? Number(row['Ref. Brokerage Amount']).toFixed(2) : ''
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Policy Details');
+    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Disposition', `attachment; filename="policy-details-${normalizedReferenceName.replace(/\s+/g, '-')}-${String(startDate)}-to-${String(endDate)}.xlsx"`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('Error exporting selected reference policy details to Excel:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error exporting selected reference policy details to Excel',
+      error: error.message
+    });
+  }
+});
+
 // Get policies by month (optional filter by reference name)
 router.get('/api/policies/month/:year/:month', async (req, res) => {
   try {

@@ -25,4 +25,15 @@ describe('CommissionReportComponent', () => {
 
     expect(component.getExportFileName()).toBe('commission-report-2026-07-01-to-2026-07-31.pdf');
   });
+
+  it('should show the selected reference export button only for a specific reference', () => {
+    component.selectedReferenceName = '';
+    expect(component.shouldShowSelectedReferenceExportButton()).toBeFalse();
+
+    component.selectedReferenceName = 'All References';
+    expect(component.shouldShowSelectedReferenceExportButton()).toBeFalse();
+
+    component.selectedReferenceName = 'John Doe';
+    expect(component.shouldShowSelectedReferenceExportButton()).toBeTrue();
+  });
 });

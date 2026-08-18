@@ -93,6 +93,17 @@ export class PolicyService {
     });
   }
 
+  downloadSelectedReferencePolicyExcel(startDate: string, endDate: string, referenceName?: string): Observable<Blob> {
+    const params: any = { startDate, endDate };
+    if (referenceName) {
+      params.referenceName = referenceName;
+    }
+    return this.http.get(`${this.apiUrl}/policies/commission/reference-details/export`, {
+      params,
+      responseType: 'blob'
+    });
+  }
+
   addDocumentToPolicy(policyId: number, documentData: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/policy/${policyId}/document`, documentData);
   }

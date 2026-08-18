@@ -101,6 +101,11 @@ export class CommissionReportComponent implements OnInit {
     return `commission-report-${from}-to-${to}.xlsx`;
   }
 
+  shouldShowSelectedReferenceExportButton(): boolean {
+    const value = (this.selectedReferenceName || '').trim();
+    return value.length > 0 && value.toLowerCase() !== 'all references';
+  }
+
   exportReportToExcel(): void {
     if (this.reportData.length === 0) {
       this.errorMessage = 'No report data available to export.';
@@ -122,6 +127,32 @@ export class CommissionReportComponent implements OnInit {
       error: (error) => {
         console.error('Error exporting commission report to Excel:', error);
         this.errorMessage = error?.error?.message || 'Unable to export report to Excel. Please try again.';
+      }
+    });
+  }
+
+  exportSelectedReferenceToExcel(): void {
+    if (!this.shouldShowSelectedReferenceExportButton()) {
+      this.errorMessage = 'Please select a specific reference to export.';
+      return;
+    }
+
+    this.policyService.downloadSelectedReferencePolicyExcel(this.startDate, this.endDate, this.selectedReferenceName).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const safeSelectedReference = this.selectedReferenceName.trim().replace(/\s+/g, '-');
+        link.download = `policy-details-${safeSelectedReference}-${this.startDate}-to-${this.endDate}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        this.errorMessage = '';
+      },
+      error: (error) => {
+        console.error('Error exporting selected reference policy details to Excel:', error);
+        this.errorMessage = error?.error?.message || 'Unable to export selected reference policy details to Excel. Please try again.';
       }
     });
   }
