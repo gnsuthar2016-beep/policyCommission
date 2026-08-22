@@ -115,13 +115,16 @@
         <tr>
           <th>Policy Number</th>
           <th>Customer Name</th>
+          <th>Mobile Number</th>
+          <th>Reference Name</th>
+          
           <th>Policy Type</th>
           <th>Company</th>
           <th>Vehicle</th>
           <th>Period</th>
           <th>Premium</th>
-          <th>Documents</th>
-          <th>Created Date</th>
+          <th *ngIf="false">Documents</th>
+          <th *ngIf="false">Created Date</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -131,6 +134,9 @@
             <strong>{{ policy.policyNumber }}</strong>
           </td>
           <td>{{ policy.customerName }}</td>
+          <td>{{ policy.customerMobileNumber || '-' }}</td>
+          <td>{{ policy.referenceName }}</td>
+          
           <td>
             <span class="badge badge-primary">{{ policy.policyType }}</span>
           </td>
@@ -143,10 +149,10 @@
             <small>{{ formatDate(policy.periodFrom) }} to {{ formatDate(policy.periodTo) }}</small>
           </td>
           <td class="premium-amount">₹{{ policy.finalPremium }}</td>
-          <td>
+          <td *ngIf="false">
             <span class="document-badge">{{ getDocumentCount(policy) }} docs</span>
           </td>
-          <td>{{ formatDate(policy.createdAt) }}</td>
+          <td *ngIf="false">{{ formatDate(policy.createdAt) }}</td>
           <td>
             <div class="action-buttons">
               <button class="btn-icon btn-view" (click)="viewPolicy(policy.id)" title="View/Edit Policy">

@@ -9,6 +9,24 @@ const Customer = require('../models/Customer');
 const Document = require('../models/Document');
 const sequelize = require('../config/database');
 
+async function addCustomerMobileNumbers(policies) {
+  const customerNames = [...new Set(policies.map((policy) => policy.customerName).filter(Boolean))];
+  if (customerNames.length === 0) {
+    return policies;
+  }
+
+  const customers = await Customer.findAll({
+    where: { name: { [Op.in]: customerNames } },
+    attributes: ['name', 'mobileNumber']
+  });
+  const mobileNumbersByName = new Map(customers.map((customer) => [customer.name, customer.mobileNumber]));
+
+  policies.forEach((policy) => {
+    policy.setDataValue('customerMobileNumber', mobileNumbersByName.get(policy.customerName) || '');
+  });
+  return policies;
+}
+
 const cloudinarySettings = {
   secure: true,
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || null,
@@ -546,6 +564,7 @@ router.get('/api/policies', async (req, res) => {
       limit: safeLimit,
       offset
     });
+    await addCustomerMobileNumbers(rows);
 
     res.status(200).json({
       success: true,
@@ -710,6 +729,7 @@ router.get('/api/policies/export', async (req, res) => {
         limit: safeLimit,
         offset
       });
+      await addCustomerMobileNumbers(rows);
 
       res.status(200).json({
         success: true,

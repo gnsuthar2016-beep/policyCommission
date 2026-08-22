@@ -1247,7 +1247,7 @@ export class PolicyPurchaseDetailsComponent implements OnInit {
     const ncbAmount = (totalPremium * parseFloat(ncbPercent)) / 100;
 
     // Calculate Net Premium (Total - NCB Amount)
-    const netPremium = totalPremium - ncbAmount;
+    const netPremium = totalPremium;
 
     // Update the Net Premium field with calculated value (rounded to 2 decimal places)
     this.form.patchValue(
