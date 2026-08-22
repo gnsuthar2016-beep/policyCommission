@@ -10,6 +10,7 @@ const Customer = require('../models/Customer');
 const CustomerDocument = require('../models/CustomerDocument');
 const BirthdayTemplate = require('../models/BirthdayTemplate');
 const Policy = require('../models/Policy');
+const { autoFitWorksheetColumns } = require('../utils/excel');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -347,6 +348,7 @@ router.get('/api/customers/export', async (req, res) => {
 
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(rows);
+    autoFitWorksheetColumns(worksheet, rows);
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Customers');
     const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 

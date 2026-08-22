@@ -90,6 +90,8 @@ const excelUpload = multer({
 
 // Import policies via Excel
 const XLSX = require('xlsx');
+const { autoFitWorksheetColumns } = require('../utils/excel');
+
 router.post('/api/import/policies', (req, res, next) => {
   excelUpload.single('file')(req, res, (err) => {
     if (err) {
@@ -636,6 +638,7 @@ router.get('/api/policies/export', async (req, res) => {
 
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(rows);
+    autoFitWorksheetColumns(worksheet, rows);
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Policies');
     const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
@@ -1359,6 +1362,7 @@ router.get('/api/policies/commission/reference-summary/export', async (req, res)
 
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(rows);
+    autoFitWorksheetColumns(worksheet, rows);
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Commission Summary');
     const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
@@ -1460,6 +1464,7 @@ router.get('/api/policies/commission/reference-details/export', async (req, res)
 
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(rows);
+    autoFitWorksheetColumns(worksheet, rows);
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Policy Details');
     const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
