@@ -51,6 +51,12 @@ input:focus{box-shadow:0 6px 18px rgba(97,166,248,0.12);border-color:var(--prima
 .auth-card::before{content:'';position:absolute;width:220px;height:220px;border-radius:50%;right:-60px;top:-60px;background:linear-gradient(180deg,rgba(97,166,248,0.16),rgba(97,166,248,0.04));filter:blur(28px);transform:translateZ(0);}
 .auth-card::after{content:'';position:absolute;width:120px;height:120px;border-radius:50%;left:-40px;bottom:-40px;background:linear-gradient(180deg,rgba(255,184,107,0.12),transparent);filter:blur(20px)}
 
+/* Prevent decorative pseudo-elements from intercepting pointer events on mobile */
+.auth-card::before,
+.auth-card::after {
+	pointer-events: none;
+}
+
 @keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.995)}to{opacity:1;transform:none}}
 
 @media (max-width:480px){.auth-page{padding:18px}.auth-card{padding:18px;border-radius:12px}}
