@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, NavigationEnd } from '@angular/router';
 import { UserService } from '../services/user.service';
 import { interval, Subscription } from 'rxjs';
 import { trigger, state, style, transition, animate } from '@angular/animations';
@@ -30,6 +30,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   user: User | null = null;
   showUserMenu = false;
   showMobileMenu = false;
+  showHamburger = true;
   sessionStartTime: string = '';
   sessionDuration: string = '0s';
   private refreshSubscription: Subscription | null = null;
@@ -42,10 +43,24 @@ showMenu:boolean = true;
   ngOnInit(): void {
     this.loadUserDetails();
     this.setSessionStartTime();
+    // compute initial hamburger visibility
+    this.updateHamburgerVisibility(this.router.url || location.href);
+    // update on route changes
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) {
+        this.updateHamburgerVisibility(event.urlAfterRedirects);
+      }
+    });
     // Refresh session duration every second
     this.refreshSubscription = interval(1000).subscribe(() => {
       this.updateSessionDuration();
     });
+  }
+
+  private updateHamburgerVisibility(url: string) {
+    const onCustomerDashboard = (url || '').includes('customer-dashboard');
+    // hide hamburger when a user is logged in and on the customer dashboard
+    this.showHamburger = !(onCustomerDashboard && !!this.user);
   }
 
   ngOnDestroy(): void {
