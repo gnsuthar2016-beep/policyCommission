@@ -5,6 +5,7 @@ const { v2: cloudinary } = require('cloudinary');
 const router = express.Router();
 const { QueryTypes, Op } = require('sequelize');
 const Policy = require('../models/Policy');
+const Reference = require('../models/Reference');
 const Customer = require('../models/Customer');
 const Document = require('../models/Document');
 const sequelize = require('../config/database');
@@ -1012,15 +1013,15 @@ router.delete('/api/document/:id', async (req, res) => {
 // Get all unique reference names (brokers)
 router.get('/api/policies/references/unique', async (req, res) => {
   try {
-    const references = await Policy.findAll({
-      attributes: ['referenceName'],
+    const references = await Reference.findAll({
+      attributes: ['name'],
       raw: true,
-      group: ['referenceName'],
-      where: { referenceName: { [require('sequelize').Op.ne]: null } }
+      group: ['name'],
+      where: { name: { [require('sequelize').Op.ne]: null } }
     });
 
     const uniqueReferences = references
-      .map(r => r.referenceName)
+      .map(r => r.name)
       .filter((v, i, a) => a.indexOf(v) === i)
       .sort();
 
