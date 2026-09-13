@@ -1012,22 +1012,17 @@ router.delete('/api/document/:id', async (req, res) => {
 // Get all unique reference names (brokers)
 router.get('/api/policies/references/unique', async (req, res) => {
   try {
-    const trimmedReferenceName = sequelize.fn('TRIM', sequelize.col('referenceName'));
     const references = await Policy.findAll({
-      attributes: [[trimmedReferenceName, 'referenceName']],
+      attributes: ['referenceName'],
       raw: true,
-      group: [trimmedReferenceName],
-      where: {
-        referenceName: {
-          [Op.and]: [
-            { [Op.ne]: null },
-            sequelize.where(trimmedReferenceName, { [Op.ne]: '' })
-          ]
-        }
-      }
+      group: ['referenceName'],
+      where: { referenceName: { [require('sequelize').Op.ne]: null } }
     });
 
-    const uniqueReferences = references.map(r => r.referenceName).sort();
+    const uniqueReferences = references
+      .map(r => r.referenceName)
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .sort();
 
     res.status(200).json({
       success: true,
