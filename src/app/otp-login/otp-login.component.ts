@@ -74,8 +74,7 @@ export class OtpLoginComponent implements OnInit {
       }).subscribe({
         next: (response) => {
           if (response.success) {
-            localStorage.setItem('user', JSON.stringify(response.data));
-            localStorage.setItem('loginTime', new Date().toISOString());
+            this.authService.saveSession(response.data);
             this.router.navigate(['/customer-dashboard']);
           } else {
             this.errorMessage = response.message || 'OTP verification failed.';

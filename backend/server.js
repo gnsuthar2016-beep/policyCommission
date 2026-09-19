@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
+const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
 const sequelize = require('./config/database');
@@ -34,6 +35,8 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'change-this-jwt-secret-in-production';
+const TOKEN_EXPIRES_IN = '30m';
 
 // Middleware
 app.use(cors());
@@ -42,14 +45,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Serve uploaded birthday template assets from the backend
 app.use('/assets', express.static(path.join(__dirname, '..', 'src', 'assets')));
-
-// Routes
-app.use(policyRoutes);
-app.use(miscMasterRoutes);
-app.use(customerRoutes);
-app.use(referenceRoutes);
-app.use(documentAiRoutes);
-app.use(llamaExtractRoute);
 
 // Database connection
 async function initializeDatabase() {
@@ -136,6 +131,30 @@ async function findCustomerByEmail(email) {
   });
 }
 
+function createToken(user) {
+  return jwt.sign(
+    { id: user.id, email: user.email, name: user.name, userType: user.userType || 'user' },
+    JWT_SECRET,
+    { expiresIn: TOKEN_EXPIRES_IN }
+  );
+}
+
+function authenticateToken(req, res, next) {
+  const authorization = req.headers.authorization || '';
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : null;
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Authentication required' });
+  }
+
+  try {
+    req.user = jwt.verify(token, JWT_SECRET);
+    next();
+  } catch (error) {
+    return res.status(401).json({ success: false, message: 'Token expired or invalid' });
+  }
+}
+
 // Login API endpoint
 app.post('/api/login', async (req, res) => {
   try {
@@ -172,7 +191,9 @@ app.post('/api/login', async (req, res) => {
       data: {
         id: user.id,
         email: user.email,
-        name: user.name
+        name: user.name,
+        userType: 'user',
+        token: createToken(user)
       }
     });
   } catch (error) {
@@ -275,12 +296,34 @@ app.post('/api/otp/verify', async (req, res) => {
       data: {
         id: customer.id,
         email: customer.emailId,
-        name: customer.name
+        name: customer.name,
+        userType: 'customer',
+        token: createToken({ id: customer.id, email: customer.emailId, name: customer.name, userType: 'customer' })
       }
     });
   } catch (error) {
     console.error('OTP verify error:', error);
     res.status(500).json({ success: false, message: 'Failed to verify OTP' });
+  }
+});
+
+app.post('/api/auth/refresh', (req, res) => {
+  const { token } = req.body || {};
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Refresh token is required' });
+  }
+
+  try {
+    const user = jwt.verify(token, JWT_SECRET);
+    const refreshedToken = createToken(user);
+    res.status(200).json({
+      success: true,
+      message: 'Token refreshed successfully',
+      data: { token: refreshedToken }
+    });
+  } catch (error) {
+    res.status(401).json({ success: false, message: 'Token expired or invalid' });
   }
 });
 
@@ -301,6 +344,14 @@ app.post('/api/logout', (req, res) => {
     });
   }
 });
+
+// All application data routes require a valid session token.
+app.use(policyRoutes);
+app.use(miscMasterRoutes);
+app.use(customerRoutes);
+app.use(referenceRoutes);
+app.use(documentAiRoutes);
+app.use(llamaExtractRoute);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

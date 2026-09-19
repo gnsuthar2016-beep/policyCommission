@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { PolicyService } from '../services/policy.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-customer-dashboard',
@@ -22,7 +23,8 @@ export class CustomerDashboardComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private policyService: PolicyService
+    private policyService: PolicyService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -135,8 +137,10 @@ export class CustomerDashboardComponent implements OnInit {
   }
 
   logout(): void {
-    localStorage.removeItem('user');
-    localStorage.removeItem('loginTime');
-    this.router.navigate(['']);
+    this.authService.clearSession();
+    this.authService.logout().subscribe({
+      complete: () => this.router.navigate(['']),
+      error: () => this.router.navigate([''])
+    });
   }
 }

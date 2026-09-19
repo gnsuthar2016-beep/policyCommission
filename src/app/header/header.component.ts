@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
-import { UserService } from '../services/user.service';
+import { AuthService } from '../services/auth.service';
 import { interval, Subscription } from 'rxjs';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 
@@ -36,7 +36,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private refreshSubscription: Subscription | null = null;
   private closeMenuTimeout: any;
 showMenu:boolean = true;
-  constructor(private userService: UserService, private router: Router) {
+  constructor(private authService: AuthService, private router: Router) {
     this.showMenu = !location.href.includes('customer-dashboard');
   }
 
@@ -85,10 +85,7 @@ showMenu:boolean = true;
       this.sessionStartTime = new Date(loginTime).toLocaleString();
       this.updateSessionDuration();
     } else {
-      // If loginTime not found, set it now
-      const now = new Date().toISOString();
-      localStorage.setItem('loginTime', now);
-      this.sessionStartTime = new Date(now).toLocaleString();
+      this.sessionStartTime = '';
       this.sessionDuration = '0s';
     }
   }
@@ -138,12 +135,10 @@ showMenu:boolean = true;
   }
 
   logout(): void {
-    // Clear user session
-    localStorage.removeItem('user');
-    localStorage.removeItem('loginTime');
+    this.authService.clearSession();
     
     // Call logout API
-    this.userService.logout().subscribe({
+    this.authService.logout().subscribe({
       next: () => {
         this.router.navigate(['/']);
       },

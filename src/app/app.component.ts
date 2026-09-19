@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -10,7 +11,7 @@ export class AppComponent implements OnInit {
   title = 'shree-ram-associate';
   showHeader = false;
 
-  constructor(private router: Router) {
+  constructor(private router: Router, private authService: AuthService) {
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
         this.updateHeaderVisibility();
@@ -20,6 +21,16 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.updateHeaderVisibility();
+    this.authService.sessionExpired$.subscribe(() => this.router.navigate(['/']));
+
+    if (this.authService.isTokenValid()) {
+      this.authService.restoreSession().subscribe((restored) => {
+        if (restored && (this.router.url === '/' || this.router.url === '')) {
+          const user = this.authService.getLoggedInUser();
+          this.router.navigate([user?.userType === 'customer' ? '/customer-dashboard' : '/dashboard']);
+        }
+      });
+    }
   }
 
   updateHeaderVisibility(): void {
