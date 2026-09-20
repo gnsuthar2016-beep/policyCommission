@@ -36,7 +36,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'change-this-jwt-secret-in-production';
-const TOKEN_EXPIRES_IN = '30m';
+const TOKEN_EXPIRES_IN = '30d';
 
 // Middleware
 app.use(cors());
