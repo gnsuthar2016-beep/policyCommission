@@ -219,18 +219,18 @@ router.post('/api/customer', async (req, res) => {
     }
 
     // Check if customer already exists by email (only if email is provided)
-    if (emailId && emailId.trim() !== '') {
-      const existingCustomerByEmail = await Customer.findOne({
-        where: { emailId: emailId.trim() }
-      });
+    // if (emailId && emailId.trim() !== '') {
+    //   const existingCustomerByEmail = await Customer.findOne({
+    //     where: { emailId: emailId.trim() }
+    //   });
 
-      if (existingCustomerByEmail) {
-        return res.status(400).json({
-          success: false,
-          message: 'Customer with this email already exists'
-        });
-      }
-    }
+    //   if (existingCustomerByEmail) {
+    //     return res.status(400).json({
+    //       success: false,
+    //       message: 'Customer with this email already exists'
+    //     });
+    //   }
+    // }
 
     const customer = await Customer.create({
       name: name,
@@ -522,21 +522,21 @@ router.put('/api/customer/:id', async (req, res) => {
     }
 
     // Check if email is already taken by another customer (only if email is provided and different from current)
-    if (emailId && emailId.trim() !== '') {
-      const trimmedEmail = emailId.trim();
-      if (customer.emailId !== trimmedEmail) {
-        const existingCustomer = await Customer.findOne({
-          where: { emailId: trimmedEmail }
-        });
+    // if (emailId && emailId.trim() !== '') {
+    //   const trimmedEmail = emailId.trim();
+    //   if (customer.emailId !== trimmedEmail) {
+    //     const existingCustomer = await Customer.findOne({
+    //       where: { emailId: trimmedEmail }
+    //     });
 
-        if (existingCustomer) {
-          return res.status(400).json({
-            success: false,
-            message: 'This email already exists'
-          });
-        }
-      }
-    }
+    //     if (existingCustomer) {
+    //       return res.status(400).json({
+    //         success: false,
+    //         message: 'This email already exists'
+    //       });
+    //     }
+    //   }
+    // }
 
     customer.name = name;
     customer.mobileNumber = mobileNumber;
