@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, Subject, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 
+const MAX_TIMEOUT_DELAY = 2_147_483_647;
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -53,9 +55,7 @@ export class AuthService {
   private readonly sessionExpiredSubject = new Subject<void>();
   readonly sessionExpired$ = this.sessionExpiredSubject.asObservable();
 
-  constructor(private http: HttpClient) {
-    this.startSessionRefresh();
-  }
+  constructor(private http: HttpClient) {}
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, credentials);
@@ -79,6 +79,12 @@ export class AuthService {
     if (!this.isTokenValid()) {
       this.clearSession();
       return of(false);
+    }
+
+    const payload = this.getTokenPayload(this.getToken());
+    if (payload?.exp && payload.exp * 1000 - Date.now() > 5 * 60 * 1000) {
+      this.startSessionRefresh();
+      return of(true);
     }
 
     return this.refreshToken().pipe(
@@ -148,8 +154,19 @@ export class AuthService {
     if (!payload?.exp) {
       return;
     }
-    const refreshIn = Math.max(1000, (payload.exp * 1000) - Date.now() - 5 * 60 * 1000);
+    const refreshAt = payload.exp * 1000 - 5 * 60 * 1000;
+    const refreshIn = refreshAt - Date.now();
+
+    if (refreshIn > MAX_TIMEOUT_DELAY) {
+      this.refreshTimer = setTimeout(() => {
+        this.refreshTimer = null;
+        this.startSessionRefresh();
+      }, MAX_TIMEOUT_DELAY);
+      return;
+    }
+
     this.refreshTimer = setTimeout(() => {
+      this.refreshTimer = null;
       this.refreshToken().subscribe({
         next: (response) => {
           const user = this.getLoggedInUser();
@@ -161,7 +178,7 @@ export class AuthService {
         },
         error: () => this.expireSession()
       });
-    }, refreshIn);
+    }, Math.max(1000, refreshIn));
   }
 
   clearSession(): void {
