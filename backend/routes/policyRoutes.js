@@ -1430,10 +1430,10 @@ router.get('/api/policies/commission/reference-details/export', async (req, res)
         "refBrokeragePercent" AS "Ref brokerage %",
         "refBrokerageAmount" AS "Ref. Brokerage Amount"
       FROM "policies"
-      WHERE "createdAt" >= :startDate
-        AND "createdAt" <= :endDate
+      WHERE "policyDate" >= :startDate
+        AND "policyDate" <= :endDate
         AND "referenceName" = :referenceName
-      ORDER BY "createdAt" DESC
+      ORDER BY "policyDate" DESC
     `;
 
     const results = await Policy.sequelize.query(query, {
