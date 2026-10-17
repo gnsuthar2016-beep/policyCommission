@@ -22,7 +22,7 @@ const Customer = sequelize.define('Customer', {
   emailId: {
     type: DataTypes.STRING,
     allowNull: true,
-    unique: true,
+    // unique: true,
     where: {
       emailId: { [require('sequelize').Op.ne]: null }
     }
